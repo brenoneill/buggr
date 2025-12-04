@@ -11,7 +11,7 @@ interface RepoBranchSelectorProps {
 /**
  * Split-screen component for selecting a repository, branch, viewing commits,
  * and displaying details for selected commits including changed files.
- * 
+ *
  * @param repos - List of user's GitHub repositories
  * @param accessToken - GitHub OAuth access token for fetching data
  */
@@ -40,14 +40,12 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
     setError(null);
 
     try {
-      const response = await fetch(
-        `/api/github/branches?owner=${repo.owner.login}&repo=${repo.name}`
-      );
-      
+      const response = await fetch(`/api/github/branches?owner=${repo.owner.login}&repo=${repo.name}`);
+
       if (!response.ok) {
         throw new Error("Failed to fetch branches");
       }
-      
+
       const data = await response.json();
       setBranches(data);
     } catch (err) {
@@ -63,7 +61,7 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
    */
   async function handleBranchSelect(branchName: string) {
     if (!selectedRepo) return;
-    
+
     setSelectedBranch(branchName);
     setSelectedCommit(null);
     setCommitDetails(null);
@@ -71,14 +69,12 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
     setError(null);
 
     try {
-      const response = await fetch(
-        `/api/github/commits?owner=${selectedRepo.owner.login}&repo=${selectedRepo.name}&branch=${encodeURIComponent(branchName)}`
-      );
-      
+      const response = await fetch(`/api/github/commits?owner=${selectedRepo.owner.login}&repo=${selectedRepo.name}&branch=${encodeURIComponent(branchName)}`);
+
       if (!response.ok) {
         throw new Error("Failed to fetch commits");
       }
-      
+
       const data = await response.json();
       setCommits(data);
     } catch (err) {
@@ -94,20 +90,18 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
    */
   async function handleCommitSelect(commit: GitHubCommit) {
     if (!selectedRepo) return;
-    
+
     setSelectedCommit(commit);
     setLoadingDetails(true);
     setError(null);
 
     try {
-      const response = await fetch(
-        `/api/github/commit?owner=${selectedRepo.owner.login}&repo=${selectedRepo.name}&sha=${commit.sha}`
-      );
-      
+      const response = await fetch(`/api/github/commit?owner=${selectedRepo.owner.login}&repo=${selectedRepo.name}&sha=${commit.sha}`);
+
       if (!response.ok) {
         throw new Error("Failed to fetch commit details");
       }
-      
+
       const data = await response.json();
       setCommitDetails(data);
     } catch (err) {
@@ -172,11 +166,7 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
         {/* Header */}
         <div className="mb-6 flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-[#30363d] bg-[#161b22]">
-            <svg
-              className="h-5 w-5 text-white"
-              fill="currentColor"
-              viewBox="0 0 24 24"
-            >
+            <svg className="h-5 w-5 text-white" fill="currentColor" viewBox="0 0 24 24">
               <path
                 fillRule="evenodd"
                 d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"
@@ -191,9 +181,7 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
         <div className="flex flex-col gap-4">
           {/* Repository Selector */}
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-[#8b949e]">
-              Repository
-            </label>
+            <label className="text-sm font-medium text-[#8b949e]">Repository</label>
             <div className="relative">
               <select
                 className="w-full appearance-none rounded-lg border border-[#30363d] bg-[#161b22] px-4 py-2.5 pr-10 text-sm text-white transition-colors focus:border-[#238636] focus:outline-none focus:ring-1 focus:ring-[#238636]"
@@ -201,8 +189,7 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
                 onChange={(e) => {
                   const repo = repos.find((r) => r.id === Number(e.target.value));
                   if (repo) handleRepoSelect(repo);
-                }}
-              >
+                }}>
                 <option value="">Choose a repository...</option>
                 {repos.map((repo) => (
                   <option key={repo.id} value={repo.id}>
@@ -221,9 +208,7 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
           {/* Branch Selector */}
           {selectedRepo && (
             <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium text-[#8b949e]">
-                Branch
-              </label>
+              <label className="text-sm font-medium text-[#8b949e]">Branch</label>
               {loadingBranches ? (
                 <div className="flex items-center justify-center py-3">
                   <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#30363d] border-t-[#238636]" />
@@ -235,8 +220,7 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
                     value={selectedBranch ?? ""}
                     onChange={(e) => {
                       if (e.target.value) handleBranchSelect(e.target.value);
-                    }}
-                  >
+                    }}>
                     <option value="">Choose a branch...</option>
                     {branches.map((branch) => (
                       <option key={branch.name} value={branch.name}>
@@ -256,11 +240,7 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
         </div>
 
         {/* Error Display */}
-        {error && (
-          <div className="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
-            {error}
-          </div>
-        )}
+        {error && <div className="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">{error}</div>}
 
         {/* Commits List */}
         {selectedBranch && (
@@ -268,15 +248,13 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
             <h3 className="mb-3 text-sm font-medium text-[#8b949e]">
               Recent commits on <span className="font-mono text-white">{selectedBranch}</span>
             </h3>
-            
+
             {loadingCommits ? (
               <div className="flex flex-1 items-center justify-center">
                 <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#30363d] border-t-[#238636]" />
               </div>
             ) : commits.length === 0 ? (
-              <div className="rounded-lg border border-[#30363d] bg-[#161b22] px-4 py-3 text-sm text-[#8b949e]">
-                No commits found
-              </div>
+              <div className="rounded-lg border border-[#30363d] bg-[#161b22] px-4 py-3 text-sm text-[#8b949e]">No commits found</div>
             ) : (
               <div className="flex-1 overflow-y-auto rounded-lg border border-[#30363d] bg-[#161b22]">
                 {commits.map((commit) => (
@@ -285,28 +263,19 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
                     onClick={() => handleCommitSelect(commit)}
                     className={`flex w-full gap-3 border-b border-[#30363d] p-3 text-left transition-colors last:border-b-0 hover:bg-[#21262d] ${
                       selectedCommit?.sha === commit.sha ? "bg-[#238636]/10 hover:bg-[#238636]/15" : ""
-                    }`}
-                  >
+                    }`}>
                     {/* Avatar */}
                     <div className="flex-shrink-0">
                       {commit.author?.avatar_url ? (
-                        <img
-                          src={commit.author.avatar_url}
-                          alt={commit.author.login}
-                          className="h-8 w-8 rounded-full"
-                        />
+                        <img src={commit.author.avatar_url} alt={commit.author.login} className="h-8 w-8 rounded-full" />
                       ) : (
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#30363d] text-xs text-[#8b949e]">
-                          {commit.commit.author.name.charAt(0).toUpperCase()}
-                        </div>
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#30363d] text-xs text-[#8b949e]">{commit.commit.author.name.charAt(0).toUpperCase()}</div>
                       )}
                     </div>
-                    
+
                     {/* Commit Details */}
                     <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                      <p className="truncate text-sm font-medium text-white">
-                        {commit.commit.message.split('\n')[0]}
-                      </p>
+                      <p className="truncate text-sm font-medium text-white">{commit.commit.message.split("\n")[0]}</p>
                       <div className="flex items-center gap-2 text-xs text-[#8b949e]">
                         <span>{commit.author?.login ?? commit.commit.author.name}</span>
                         <span>•</span>
@@ -339,46 +308,20 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
             {/* Commit Header */}
             <div className="flex items-start gap-4">
               {selectedCommit.author?.avatar_url ? (
-                <img
-                  src={selectedCommit.author.avatar_url}
-                  alt={selectedCommit.author.login}
-                  className="h-12 w-12 rounded-full"
-                />
+                <img src={selectedCommit.author.avatar_url} alt={selectedCommit.author.login} className="h-12 w-12 rounded-full" />
               ) : (
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#30363d] text-lg text-[#8b949e]">
-                  {selectedCommit.commit.author.name.charAt(0).toUpperCase()}
-                </div>
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#30363d] text-lg text-[#8b949e]">{selectedCommit.commit.author.name.charAt(0).toUpperCase()}</div>
               )}
               <div className="flex min-w-0 flex-1 flex-col gap-1">
-                <h2 className="text-lg font-semibold text-white">
-                  {selectedCommit.author?.login ?? selectedCommit.commit.author.name}
-                </h2>
-                <p className="text-sm text-[#8b949e]">
-                  {formatFullDate(selectedCommit.commit.author.date)}
-                </p>
+                <h2 className="text-lg font-semibold text-white">{selectedCommit.author?.login ?? selectedCommit.commit.author.name}</h2>
+                <p className="text-sm text-[#8b949e]">{formatFullDate(selectedCommit.commit.author.date)}</p>
               </div>
-              {/* Link to GitHub */}
-              {selectedRepo && (
-                <a
-                  href={`https://github.com/${selectedRepo.full_name}/commit/${selectedCommit.sha}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex-shrink-0 rounded-lg border border-[#30363d] bg-[#21262d] p-2 text-[#8b949e] transition-colors hover:bg-[#30363d] hover:text-white"
-                  title="View on GitHub"
-                >
-                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                  </svg>
-                </a>
-              )}
             </div>
 
             {/* Commit Message */}
             <div className="flex flex-col gap-2">
               <div className="flex items-center gap-3">
-                <code className="rounded-md bg-[#161b22] px-2 py-1 font-mono text-xs text-[#58a6ff]">
-                  {selectedCommit.sha.substring(0, 7)}
-                </code>
+                <code className="rounded-md bg-[#161b22] px-2 py-1 font-mono text-xs text-[#58a6ff]">{selectedCommit.sha.substring(0, 7)}</code>
                 {commitDetails.stats && (
                   <div className="flex items-center gap-2 text-xs">
                     <span className="text-[#3fb950]">+{commitDetails.stats.additions}</span>
@@ -386,36 +329,32 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
                   </div>
                 )}
               </div>
-              <p className="text-sm text-white">
-                {selectedCommit.commit.message.split('\n')[0]}
-              </p>
+              <p className="text-sm text-white">{selectedCommit.commit.message.split("\n")[0]}</p>
             </div>
 
             {/* Changed Files */}
             <div className="flex min-h-0 flex-1 flex-col gap-3">
               <h3 className="flex items-center gap-2 text-sm font-medium text-[#8b949e]">
                 <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  />
                 </svg>
                 {commitDetails.files?.length ?? 0} files changed
               </h3>
-              
+
               {commitDetails.files && commitDetails.files.length > 0 ? (
                 <div className="flex-1 overflow-y-auto rounded-lg border border-[#30363d] bg-[#161b22]">
                   {commitDetails.files.map((file) => {
                     const statusStyle = getStatusColor(file.status);
                     return (
-                      <div
-                        key={file.sha + file.filename}
-                        className="flex items-center gap-3 border-b border-[#30363d] px-4 py-3 last:border-b-0 hover:bg-[#21262d]"
-                      >
+                      <div key={file.sha + file.filename} className="flex items-center gap-3 border-b border-[#30363d] px-4 py-3 last:border-b-0 hover:bg-[#21262d]">
                         {/* Status Badge */}
-                        <span
-                          className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded text-xs font-bold ${statusStyle.bg} ${statusStyle.text}`}
-                        >
-                          {statusStyle.label}
-                        </span>
-                        
+                        <span className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded text-xs font-bold ${statusStyle.bg} ${statusStyle.text}`}>{statusStyle.label}</span>
+
                         {/* Filename */}
                         <span className="min-w-0 flex-1 truncate font-mono text-sm text-white">
                           {file.status === "renamed" && file.previous_filename ? (
@@ -428,26 +367,40 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
                             file.filename
                           )}
                         </span>
-                        
+
                         {/* Changes */}
                         <div className="flex flex-shrink-0 items-center gap-2 text-xs">
-                          {file.additions > 0 && (
-                            <span className="text-[#3fb950]">+{file.additions}</span>
-                          )}
-                          {file.deletions > 0 && (
-                            <span className="text-[#f85149]">-{file.deletions}</span>
-                          )}
+                          {file.additions > 0 && <span className="text-[#3fb950]">+{file.additions}</span>}
+                          {file.deletions > 0 && <span className="text-[#f85149]">-{file.deletions}</span>}
                         </div>
                       </div>
                     );
                   })}
                 </div>
               ) : (
-                <div className="rounded-lg border border-[#30363d] bg-[#161b22] px-4 py-3 text-sm text-[#8b949e]">
-                  No files changed
-                </div>
+                <div className="rounded-lg border border-[#30363d] bg-[#161b22] px-4 py-3 text-sm text-[#8b949e]">No files changed</div>
               )}
             </div>
+            {/* View on GitHub Button */}
+            {selectedRepo && (
+              <a
+                href={`https://github.com/${selectedRepo.full_name}/commit/${selectedCommit.sha}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 self-start rounded-lg border border-[#30363d] bg-[#21262d] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#30363d]">
+                <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                  <path
+                    fillRule="evenodd"
+                    d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                View on GitHub
+                <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+              </a>
+            )}
           </div>
         ) : selectedCommit ? (
           <div className="flex flex-1 items-center justify-center">
@@ -456,12 +409,7 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
         ) : (
           <div className="flex flex-1 flex-col items-center justify-center gap-4 text-center">
             <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-[#30363d] bg-[#161b22]">
-              <svg
-                className="h-8 w-8 text-[#8b949e]"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
+              <svg className="h-8 w-8 text-[#8b949e]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -472,9 +420,7 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
             </div>
             <div className="flex flex-col gap-1">
               <h3 className="text-lg font-medium text-white">No commit selected</h3>
-              <p className="max-w-xs text-sm text-[#8b949e]">
-                Select a commit from the list to view changed files
-              </p>
+              <p className="max-w-xs text-sm text-[#8b949e]">Select a commit from the list to view changed files</p>
             </div>
           </div>
         )}
