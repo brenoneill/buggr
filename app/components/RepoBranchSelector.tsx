@@ -176,11 +176,14 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
       setBranchSuffix("");
       setShowCreateBranch(false);
       
-      // Refresh branches list
+      // Refresh branches list and switch to the new branch
       const branchesResponse = await fetch(`/api/github/branches?owner=${selectedRepo.owner.login}&repo=${selectedRepo.name}`);
       if (branchesResponse.ok) {
         const branchesData = await branchesResponse.json();
         setBranches(branchesData);
+        
+        // Switch to the newly created branch
+        handleBranchSelect(fullBranchName);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create branch");
