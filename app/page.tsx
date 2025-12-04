@@ -1,7 +1,14 @@
 import { auth, signIn, signOut } from "@/auth";
+import { fetchUserRepos } from "@/lib/github";
+import { RepoBranchSelector } from "./components/RepoBranchSelector";
 
 export default async function Home() {
   const session = await auth();
+  
+  // Fetch repos if user is authenticated
+  const repos = session?.accessToken 
+    ? await fetchUserRepos(session.accessToken).catch(() => [])
+    : [];
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#0d1117]">
@@ -20,7 +27,7 @@ export default async function Home() {
       {/* Glow effect */}
       <div className="absolute top-1/2 left-1/2 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#238636]/10 blur-[120px]" />
 
-      <main className="relative z-10 flex flex-col items-center gap-8 px-6 text-center">
+      <main className="relative z-10 flex flex-col items-center gap-8 px-6 py-12 text-center">
         {/* GitHub Icon */}
         <div className="flex h-24 w-24 items-center justify-center rounded-2xl border border-[#30363d] bg-[#161b22] shadow-2xl">
           <svg
@@ -108,6 +115,11 @@ export default async function Home() {
               Connect to GitHub
             </button>
           </form>
+        )}
+
+        {/* Repository and Branch Selector */}
+        {session?.user && repos.length > 0 && (
+          <RepoBranchSelector repos={repos} accessToken={session.accessToken!} />
         )}
       </main>
     </div>

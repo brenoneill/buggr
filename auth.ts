@@ -12,6 +12,32 @@ import GitHub from "next-auth/providers/github";
  * @see https://authjs.dev/getting-started/installation
  */
 export const { handlers, signIn, signOut, auth } = NextAuth({
-  providers: [GitHub],
+  providers: [
+    GitHub({
+      authorization: {
+        params: {
+          // Request repo scope to access repository data including branches
+          scope: "read:user user:email repo",
+        },
+      },
+    }),
+  ],
+  callbacks: {
+    /**
+     * Stores the GitHub access token in the JWT for API calls.
+     */
+    async jwt({ token, account }) {
+      if (account) {
+        token.accessToken = account.access_token;
+      }
+      return token;
+    },
+    /**
+     * Exposes the access token to the client session.
+     */
+    async session({ session, token }) {
+      session.accessToken = token.accessToken as string;
+      return session;
+    },
+  },
 });
-
