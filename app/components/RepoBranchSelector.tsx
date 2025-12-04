@@ -33,6 +33,9 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
   const [creatingBranch, setCreatingBranch] = useState(false);
   const [branchSuccess, setBranchSuccess] = useState<string | null>(null);
   const [timestamp, setTimestamp] = useState(() => generateTimestamp());
+  
+  // Check if we're on a stresst-test branch
+  const isStresstTestBranch = selectedBranch?.includes("stresst-test") ?? false;
 
   /**
    * Generates a timestamp string for branch naming (YYYYMMDD-HHMMSS).
@@ -498,6 +501,22 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                   </svg>
                   Create Branch
+                </button>
+              )}
+
+              {/* Introduce Chaos Button - only shown on stresst-test branches */}
+              {isStresstTestBranch && (
+                <button
+                  onClick={() => {
+                    // TODO: Implement chaos introduction
+                    console.log("Introducing chaos...");
+                  }}
+                  className="ml-auto inline-flex items-center gap-2 rounded-lg border border-[#da3633] bg-[#da3633] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#f85149]"
+                >
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  Introduce Chaos
                 </button>
               )}
             </div>
