@@ -1,0 +1,4 @@
+---
+alwaysApply: true
+---
+If you generate something that you believe should be a component and will be reused throughout the application - please prompt me and ask if you should make a reusable component

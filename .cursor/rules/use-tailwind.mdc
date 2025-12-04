@@ -1,0 +1,5 @@
+---
+alwaysApply: true
+---
+
+Please always use tailwind for css when possible. Please do not create in-fill css classes if asked to add styling like sr-only etc - if you cannot find a Tailwind class, please just let me know and I will address it

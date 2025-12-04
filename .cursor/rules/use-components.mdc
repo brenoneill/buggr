@@ -1,0 +1,5 @@
+---
+alwaysApply: true
+---
+
+Before generating, look through the components folder and use a component from there before creating anything in-file
