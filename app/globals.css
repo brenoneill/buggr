@@ -10,6 +10,41 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* GitHub-inspired dark theme colors */
+  /* Base colors */
+  --color-gh-canvas: #0d1117;
+  --color-gh-canvas-subtle: #161b22;
+  --color-gh-canvas-inset: #010409;
+
+  /* Border colors */
+  --color-gh-border: #30363d;
+  --color-gh-border-muted: #21262d;
+
+  /* Text colors */
+  --color-gh-text: #e6edf3;
+  --color-gh-text-muted: #8b949e;
+  --color-gh-text-subtle: #6e7681;
+
+  /* Accent colors - Green (success) */
+  --color-gh-success: #238636;
+  --color-gh-success-emphasis: #2ea043;
+  --color-gh-success-fg: #3fb950;
+  --color-gh-success-muted: rgba(35, 134, 54, 0.2);
+
+  /* Accent colors - Red (danger) */
+  --color-gh-danger: #da3633;
+  --color-gh-danger-emphasis: #f85149;
+  --color-gh-danger-fg: #f85149;
+  --color-gh-danger-muted: rgba(218, 54, 51, 0.2);
+
+  /* Accent colors - Blue */
+  --color-gh-accent: #58a6ff;
+
+  /* Accent colors - Warning/Amber */
+  --color-gh-warning: #9e6a03;
+  --color-gh-warning-fg: #d29922;
+  --color-gh-warning-muted: rgba(158, 106, 3, 0.2);
 }
 
 @media (prefers-color-scheme: dark) {

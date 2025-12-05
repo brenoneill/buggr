@@ -370,26 +370,26 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
   function getStatusColor(status: string): { bg: string; text: string; label: string } {
     switch (status) {
       case "added":
-        return { bg: "bg-[#238636]/20", text: "text-[#3fb950]", label: "A" };
+        return { bg: "bg-gh-success/20", text: "text-gh-success-fg", label: "A" };
       case "removed":
-        return { bg: "bg-[#da3633]/20", text: "text-[#f85149]", label: "D" };
+        return { bg: "bg-gh-danger/20", text: "text-gh-danger-fg", label: "D" };
       case "modified":
-        return { bg: "bg-[#9e6a03]/20", text: "text-[#d29922]", label: "M" };
+        return { bg: "bg-gh-warning/20", text: "text-gh-warning-fg", label: "M" };
       case "renamed":
-        return { bg: "bg-[#8b949e]/20", text: "text-[#8b949e]", label: "R" };
+        return { bg: "bg-gh-text-muted/20", text: "text-gh-text-muted", label: "R" };
       default:
-        return { bg: "bg-[#8b949e]/20", text: "text-[#8b949e]", label: "?" };
+        return { bg: "bg-gh-text-muted/20", text: "text-gh-text-muted", label: "?" };
     }
   }
 
   return (
     <div className="flex h-screen w-full">
       {/* Left Panel - Selection & Commits */}
-      <div className="flex h-full w-[40%] flex-col border-r border-[#30363d] p-6">
+      <div className="flex h-full w-[40%] flex-col border-r border-gh-border p-6">
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-[#30363d] bg-[#161b22]">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-gh-border bg-gh-canvas-subtle">
               <svg className="h-5 w-5 text-white" fill="currentColor" viewBox="0 0 24 24">
                 <path
                   fillRule="evenodd"
@@ -407,10 +407,10 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
         <div className="flex flex-col gap-4">
           {/* Repository Selector */}
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-[#8b949e]">Repository</label>
+            <label className="text-sm font-medium text-gh-text-muted">Repository</label>
             <div className="relative">
               <select
-                className="w-full appearance-none rounded-lg border border-[#30363d] bg-[#161b22] px-4 py-2.5 pr-10 text-sm text-white transition-colors focus:border-[#238636] focus:outline-none focus:ring-1 focus:ring-[#238636]"
+                className="w-full appearance-none rounded-lg border border-gh-border bg-gh-canvas-subtle px-4 py-2.5 pr-10 text-sm text-white transition-colors focus:border-gh-success focus:outline-none focus:ring-1 focus:ring-gh-success"
                 value={selectedRepo?.id ?? ""}
                 onChange={(e) => {
                   const repo = repos.find((r) => r.id === Number(e.target.value));
@@ -424,7 +424,7 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
                 ))}
               </select>
               <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
-                <svg className="h-4 w-4 text-[#8b949e]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="h-4 w-4 text-gh-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </div>
@@ -434,15 +434,15 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
           {/* Branch Selector */}
           {selectedRepo && (
             <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium text-[#8b949e]">Branch</label>
+              <label className="text-sm font-medium text-gh-text-muted">Branch</label>
               {loadingBranches ? (
                 <div className="flex items-center justify-center py-3">
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#30363d] border-t-[#238636]" />
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-gh-border border-t-gh-success" />
                 </div>
               ) : (
                 <div className="relative">
                   <select
-                    className="w-full appearance-none rounded-lg border border-[#30363d] bg-[#161b22] px-4 py-2.5 pr-10 text-sm text-white transition-colors focus:border-[#238636] focus:outline-none focus:ring-1 focus:ring-[#238636]"
+                    className="w-full appearance-none rounded-lg border border-gh-border bg-gh-canvas-subtle px-4 py-2.5 pr-10 text-sm text-white transition-colors focus:border-gh-success focus:outline-none focus:ring-1 focus:ring-gh-success"
                     value={selectedBranch ?? ""}
                     onChange={(e) => {
                       if (e.target.value) handleBranchSelect(e.target.value);
@@ -455,7 +455,7 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
                     ))}
                   </select>
                   <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
-                    <svg className="h-4 w-4 text-[#8b949e]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="h-4 w-4 text-gh-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
                   </div>
@@ -472,7 +472,7 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
         {selectedBranch && (
           <div className="mt-6 flex min-h-0 flex-1 flex-col">
             <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-sm font-medium text-[#8b949e]">
+              <h3 className="text-sm font-medium text-gh-text-muted">
                 Recent commits on <span className="font-mono text-white">{selectedBranch}</span>
               </h3>
               
@@ -481,17 +481,17 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
                 <div className="relative">
                   {showDeleteConfirm ? (
                     <div className="flex items-center gap-2">
-                      <span className="text-xs text-[#f85149]">Delete branch?</span>
+                      <span className="text-xs text-gh-danger-fg">Delete branch?</span>
                       <button
                         onClick={handleDeleteBranch}
                         disabled={deletingBranch}
-                        className="rounded px-2 py-1 text-xs font-medium text-white bg-[#da3633] hover:bg-[#f85149] disabled:opacity-50"
+                        className="rounded px-2 py-1 text-xs font-medium text-white bg-gh-danger hover:bg-gh-danger-emphasis disabled:opacity-50"
                       >
                         {deletingBranch ? "Deleting..." : "Yes"}
                       </button>
                       <button
                         onClick={() => setShowDeleteConfirm(false)}
-                        className="rounded px-2 py-1 text-xs text-[#8b949e] hover:text-white"
+                        className="rounded px-2 py-1 text-xs text-gh-text-muted hover:text-white"
                       >
                         No
                       </button>
@@ -499,7 +499,7 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
                   ) : (
                     <button
                       onClick={() => setShowDeleteConfirm(true)}
-                      className="flex items-center gap-1 rounded px-2 py-1 text-xs text-[#8b949e] transition-colors hover:bg-[#da3633]/20 hover:text-[#f85149]"
+                      className="flex items-center gap-1 rounded px-2 py-1 text-xs text-gh-text-muted transition-colors hover:bg-gh-danger/20 hover:text-gh-danger-fg"
                       title="Delete this branch"
                     >
                       <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -514,32 +514,32 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
 
             {loadingCommits ? (
               <div className="flex flex-1 items-center justify-center">
-                <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#30363d] border-t-[#238636]" />
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-gh-border border-t-gh-success" />
               </div>
             ) : commits.length === 0 ? (
-              <div className="rounded-lg border border-[#30363d] bg-[#161b22] px-4 py-3 text-sm text-[#8b949e]">No commits found</div>
+              <div className="rounded-lg border border-gh-border bg-gh-canvas-subtle px-4 py-3 text-sm text-gh-text-muted">No commits found</div>
             ) : (
-              <div className="flex-1 overflow-y-auto rounded-lg border border-[#30363d] bg-[#161b22]">
+              <div className="flex-1 overflow-y-auto rounded-lg border border-gh-border bg-gh-canvas-subtle">
                 {commits.map((commit) => (
                   <button
                     key={commit.sha}
                     onClick={() => handleCommitSelect(commit)}
-                    className={`flex w-full gap-3 border-b border-[#30363d] p-3 text-left transition-colors last:border-b-0 hover:bg-[#21262d] ${
-                      selectedCommit?.sha === commit.sha ? "bg-[#238636]/10 hover:bg-[#238636]/15" : ""
+                    className={`flex w-full gap-3 border-b border-gh-border p-3 text-left transition-colors last:border-b-0 hover:bg-gh-border-muted ${
+                      selectedCommit?.sha === commit.sha ? "bg-gh-success/10 hover:bg-gh-success/15" : ""
                     }`}>
                     {/* Avatar */}
                     <div className="flex-shrink-0">
                       {commit.author?.avatar_url ? (
                         <img src={commit.author.avatar_url} alt={commit.author.login} className="h-8 w-8 rounded-full" />
                       ) : (
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#30363d] text-xs text-[#8b949e]">{commit.commit.author.name.charAt(0).toUpperCase()}</div>
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gh-border text-xs text-gh-text-muted">{commit.commit.author.name.charAt(0).toUpperCase()}</div>
                       )}
                     </div>
 
                     {/* Commit Details */}
                     <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                       <p className="truncate text-sm font-medium text-white">{commit.commit.message.split("\n")[0]}</p>
-                      <div className="flex items-center gap-2 text-xs text-[#8b949e]">
+                      <div className="flex items-center gap-2 text-xs text-gh-text-muted">
                         <span>{commit.author?.login ?? commit.commit.author.name}</span>
                         <span>•</span>
                         <span>{formatRelativeTime(commit.commit.author.date)}</span>
@@ -549,7 +549,7 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
                     {/* Selection indicator */}
                     {selectedCommit?.sha === commit.sha && (
                       <div className="flex items-center">
-                        <div className="h-2 w-2 rounded-full bg-[#238636]" />
+                        <div className="h-2 w-2 rounded-full bg-gh-success" />
                       </div>
                     )}
                   </button>
@@ -564,7 +564,7 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
       <div className="flex h-full w-[60%] flex-col overflow-hidden p-6">
         {loadingDetails ? (
           <div className="flex flex-1 items-center justify-center">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#30363d] border-t-[#238636]" />
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-gh-border border-t-gh-success" />
           </div>
         ) : selectedCommit && commitDetails ? (
           <div className="flex h-full flex-col gap-6 overflow-y-auto">
@@ -573,22 +573,22 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
               {selectedCommit.author?.avatar_url ? (
                 <img src={selectedCommit.author.avatar_url} alt={selectedCommit.author.login} className="h-12 w-12 rounded-full" />
               ) : (
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#30363d] text-lg text-[#8b949e]">{selectedCommit.commit.author.name.charAt(0).toUpperCase()}</div>
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gh-border text-lg text-gh-text-muted">{selectedCommit.commit.author.name.charAt(0).toUpperCase()}</div>
               )}
               <div className="flex min-w-0 flex-1 flex-col gap-1">
                 <h2 className="text-lg font-semibold text-white">{selectedCommit.author?.login ?? selectedCommit.commit.author.name}</h2>
-                <p className="text-sm text-[#8b949e]">{formatFullDate(selectedCommit.commit.author.date)}</p>
+                <p className="text-sm text-gh-text-muted">{formatFullDate(selectedCommit.commit.author.date)}</p>
               </div>
             </div>
 
             {/* Commit Message */}
             <div className="flex flex-col gap-2">
               <div className="flex items-center gap-3">
-                <code className="rounded-md bg-[#161b22] px-2 py-1 font-mono text-xs text-[#58a6ff]">{selectedCommit.sha.substring(0, 7)}</code>
+                <code className="rounded-md bg-gh-canvas-subtle px-2 py-1 font-mono text-xs text-gh-accent">{selectedCommit.sha.substring(0, 7)}</code>
                 {commitDetails.stats && (
                   <div className="flex items-center gap-2 text-xs">
-                    <span className="text-[#3fb950]">+{commitDetails.stats.additions}</span>
-                    <span className="text-[#f85149]">-{commitDetails.stats.deletions}</span>
+                    <span className="text-gh-success-fg">+{commitDetails.stats.additions}</span>
+                    <span className="text-gh-danger-fg">-{commitDetails.stats.deletions}</span>
                   </div>
                 )}
               </div>
@@ -597,7 +597,7 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
 
             {/* Changed Files */}
             <div className="flex min-h-0 flex-1 flex-col gap-3">
-              <h3 className="flex items-center gap-2 text-sm font-medium text-[#8b949e]">
+              <h3 className="flex items-center gap-2 text-sm font-medium text-gh-text-muted">
                 <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
@@ -610,11 +610,11 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
               </h3>
 
               {commitDetails.files && commitDetails.files.length > 0 ? (
-                <div className="flex-1 overflow-y-auto rounded-lg border border-[#30363d] bg-[#161b22]">
+                <div className="flex-1 overflow-y-auto rounded-lg border border-gh-border bg-gh-canvas-subtle">
                   {commitDetails.files.map((file) => {
                     const statusStyle = getStatusColor(file.status);
                     return (
-                      <div key={file.sha + file.filename} className="flex items-center gap-3 border-b border-[#30363d] px-4 py-3 last:border-b-0 hover:bg-[#21262d]">
+                      <div key={file.sha + file.filename} className="flex items-center gap-3 border-b border-gh-border px-4 py-3 last:border-b-0 hover:bg-gh-border-muted">
                         {/* Status Badge */}
                         <span className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded text-xs font-bold ${statusStyle.bg} ${statusStyle.text}`}>{statusStyle.label}</span>
 
@@ -622,8 +622,8 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
                         <span className="min-w-0 flex-1 truncate font-mono text-sm text-white">
                           {file.status === "renamed" && file.previous_filename ? (
                             <>
-                              <span className="text-[#8b949e]">{file.previous_filename}</span>
-                              <span className="mx-2 text-[#8b949e]">→</span>
+                              <span className="text-gh-text-muted">{file.previous_filename}</span>
+                              <span className="mx-2 text-gh-text-muted">→</span>
                               {file.filename}
                             </>
                           ) : (
@@ -633,15 +633,15 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
 
                         {/* Changes */}
                         <div className="flex flex-shrink-0 items-center gap-2 text-xs">
-                          {file.additions > 0 && <span className="text-[#3fb950]">+{file.additions}</span>}
-                          {file.deletions > 0 && <span className="text-[#f85149]">-{file.deletions}</span>}
+                          {file.additions > 0 && <span className="text-gh-success-fg">+{file.additions}</span>}
+                          {file.deletions > 0 && <span className="text-gh-danger-fg">-{file.deletions}</span>}
                         </div>
                       </div>
                     );
                   })}
                 </div>
               ) : (
-                <div className="rounded-lg border border-[#30363d] bg-[#161b22] px-4 py-3 text-sm text-[#8b949e]">No files changed</div>
+                <div className="rounded-lg border border-gh-border bg-gh-canvas-subtle px-4 py-3 text-sm text-gh-text-muted">No files changed</div>
               )}
             </div>
             {/* Action Buttons */}
@@ -652,7 +652,7 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
                   href={`https://github.com/${selectedRepo.full_name}/commit/${selectedCommit.sha}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 rounded-lg border border-[#30363d] bg-[#21262d] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#30363d]"
+                  className="inline-flex items-center gap-2 rounded-lg border border-gh-border bg-gh-border-muted px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-gh-border"
                 >
                   <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
                     <path
@@ -675,7 +675,7 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
                     setShowCreateBranch(true);
                     setTimestamp(generateTimestamp());
                   }}
-                  className="inline-flex items-center gap-2 rounded-lg border border-[#da3633] bg-[#da3633] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#f85149]"
+                  className="inline-flex items-center gap-2 rounded-lg border border-gh-danger bg-gh-danger px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-gh-danger-emphasis"
                 >
                   <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -687,9 +687,9 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
 
             {/* Stress Result */}
             {stressResult && selectedCommit && (
-              <div className="rounded-lg border border-[#da3633]/30 bg-[#da3633]/10 p-4">
+              <div className="rounded-lg border border-gh-danger/30 bg-gh-danger/10 p-4">
                 <div className="mb-3 flex items-center justify-between">
-                  <h4 className="flex items-center gap-2 font-medium text-[#f85149]">
+                  <h4 className="flex items-center gap-2 font-medium text-gh-danger-fg">
                     <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                     </svg>
@@ -697,20 +697,20 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
                   </h4>
                   <button
                     onClick={() => setStressResult(null)}
-                    className="text-[#8b949e] hover:text-white"
+                    className="text-gh-text-muted hover:text-white"
                   >
                     <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>
                   </button>
                 </div>
-                <p className="mb-2 text-sm text-[#f85149]">{stressResult.message}</p>
+                <p className="mb-2 text-sm text-gh-danger-fg">{stressResult.message}</p>
                 <div className="space-y-2">
                   {stressResult.results.filter(r => r.success).map((result) => (
-                    <div key={result.file} className="rounded border border-[#30363d] bg-[#161b22] p-2 text-xs">
+                    <div key={result.file} className="rounded border border-gh-border bg-gh-canvas-subtle p-2 text-xs">
                       <div className="font-mono text-white">{result.file}</div>
                       {result.changes && (
-                        <ul className="mt-1 list-inside list-disc text-[#8b949e]">
+                        <ul className="mt-1 list-inside list-disc text-gh-text-muted">
                           {result.changes.map((change, i) => (
                             <li key={i}>{change}</li>
                           ))}
@@ -724,7 +724,7 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
 
             {/* Create Branch Form */}
             {showCreateBranch && selectedBranch && (
-              <form onSubmit={handleCreateBranch} className="flex flex-col gap-3 rounded-lg border border-[#30363d] bg-[#161b22] p-4">
+              <form onSubmit={handleCreateBranch} className="flex flex-col gap-3 rounded-lg border border-gh-border bg-gh-canvas-subtle p-4">
                 <div className="flex items-center justify-between">
                   <label className="text-sm font-medium text-white">Create stressed branch from this commit</label>
                   <button
@@ -735,15 +735,15 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
                       setStressContext("");
                       setStressLevel("medium");
                     }}
-                    className="text-[#8b949e] hover:text-white"
+                    className="text-gh-text-muted hover:text-white"
                   >
                     <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>
                   </button>
                 </div>
-                <div className="flex items-center rounded-lg border border-[#30363d] bg-[#0d1117]">
-                  <span className="whitespace-nowrap border-r border-[#30363d] bg-[#161b22] px-3 py-2 font-mono text-sm text-[#8b949e]">
+                <div className="flex items-center rounded-lg border border-gh-border bg-gh-canvas">
+                  <span className="whitespace-nowrap border-r border-gh-border bg-gh-canvas-subtle px-3 py-2 font-mono text-sm text-gh-text-muted">
                     stresst-{selectedBranch}-{timestamp}-
                   </span>
                   <input
@@ -751,27 +751,27 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
                     value={branchSuffix}
                     onChange={(e) => setBranchSuffix(e.target.value.replace(/\s/g, "-"))}
                     placeholder="optional-suffix"
-                    className="min-w-0 flex-1 bg-transparent px-3 py-2 text-sm text-white placeholder-[#8b949e] focus:outline-none"
+                    className="min-w-0 flex-1 bg-transparent px-3 py-2 text-sm text-white placeholder-gh-text-muted focus:outline-none"
                     disabled={creatingBranch}
                   />
                 </div>
 
-                <p className="text-xs text-[#8b949e]">
-                  Full branch name: <code className="text-[#58a6ff]">{getFullBranchName(branchSuffix)}</code>
+                <p className="text-xs text-gh-text-muted">
+                  Full branch name: <code className="text-gh-accent">{getFullBranchName(branchSuffix)}</code>
                 </p>
 
                 {/* Stress level selector */}
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-medium text-[#8b949e]">Stress Level</label>
-                  <div className="flex rounded-lg border border-[#30363d] bg-[#0d1117] p-1">
+                  <label className="text-xs font-medium text-gh-text-muted">Stress Level</label>
+                  <div className="flex rounded-lg border border-gh-border bg-gh-canvas p-1">
                     <button
                       type="button"
                       onClick={() => setStressLevel("low")}
                       disabled={creatingBranch}
                       className={`flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
                         stressLevel === "low"
-                          ? "bg-[#238636] text-white"
-                          : "text-[#8b949e] hover:text-white"
+                          ? "bg-gh-success text-white"
+                          : "text-gh-text-muted hover:text-white"
                       }`}
                     >
                       🌱 Low
@@ -782,8 +782,8 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
                       disabled={creatingBranch}
                       className={`flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
                         stressLevel === "medium"
-                          ? "bg-[#9e6a03] text-white"
-                          : "text-[#8b949e] hover:text-white"
+                          ? "bg-gh-warning text-white"
+                          : "text-gh-text-muted hover:text-white"
                       }`}
                     >
                       🔥 Medium
@@ -794,14 +794,14 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
                       disabled={creatingBranch}
                       className={`flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
                         stressLevel === "high"
-                          ? "bg-[#da3633] text-white"
-                          : "text-[#8b949e] hover:text-white"
+                          ? "bg-gh-danger text-white"
+                          : "text-gh-text-muted hover:text-white"
                       }`}
                     >
                       💀 High
                     </button>
                   </div>
-                  <p className="text-xs text-[#6e7681]">
+                  <p className="text-xs text-gh-text-subtle">
                     {stressLevel === "low" && "1-2 straightforward bugs, easier to spot"}
                     {stressLevel === "medium" && "2-3 subtle bugs, requires careful review"}
                     {stressLevel === "high" && "3-5 devious bugs, may require deep debugging"}
@@ -810,20 +810,20 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
 
                 {/* Optional stress context */}
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-medium text-[#8b949e]">
-                    Focus area <span className="text-[#6e7681]">(optional)</span>
+                  <label className="text-xs font-medium text-gh-text-muted">
+                    Focus area <span className="text-gh-text-subtle">(optional)</span>
                   </label>
                   <div className="relative">
                     <textarea
                       value={stressContext}
                       onChange={(e) => setStressContext(e.target.value.slice(0, 200))}
                       placeholder="e.g., Test their understanding of async/await, null handling, or array bounds..."
-                      className="w-full resize-none rounded-lg border border-[#30363d] bg-[#0d1117] px-3 py-2 text-sm text-white placeholder-[#6e7681] focus:border-[#da3633] focus:outline-none focus:ring-1 focus:ring-[#da3633]"
+                      className="w-full resize-none rounded-lg border border-gh-border bg-gh-canvas px-3 py-2 text-sm text-white placeholder-gh-text-subtle focus:border-gh-danger focus:outline-none focus:ring-1 focus:ring-gh-danger"
                       rows={2}
                       maxLength={200}
                       disabled={creatingBranch}
                     />
-                    <span className="absolute bottom-2 right-2 text-xs text-[#6e7681]">
+                    <span className="absolute bottom-2 right-2 text-xs text-gh-text-subtle">
                       {stressContext.length}/200
                     </span>
                   </div>
@@ -831,15 +831,15 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
 
                 {/* Submit button or Loading progress */}
                 {creatingBranch ? (
-                  <div className="rounded-lg border border-[#30363d] bg-[#0d1117] p-4">
+                  <div className="rounded-lg border border-gh-border bg-gh-canvas p-4">
                     {/* Progress header */}
                     <div className="mb-4 flex items-center gap-3">
-                      <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#30363d] border-t-[#da3633]" />
+                      <div className="h-8 w-8 animate-spin rounded-full border-2 border-gh-border border-t-gh-danger" />
                       <div>
                         <p className="text-sm font-medium text-white">
                           {loadingSteps[loadingStep - 1]?.label || "Preparing..."}
                         </p>
-                        <p className="text-xs text-[#8b949e]">This may take a moment</p>
+                        <p className="text-xs text-gh-text-muted">This may take a moment</p>
                       </div>
                     </div>
                     
@@ -856,10 +856,10 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
                             {/* Step indicator */}
                             <div className={`flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-xs font-medium transition-colors ${
                               isComplete 
-                                ? "bg-[#238636] text-white" 
+                                ? "bg-gh-success text-white" 
                                 : isCurrent 
-                                  ? "bg-[#da3633] text-white animate-pulse" 
-                                  : "bg-[#30363d] text-[#8b949e]"
+                                  ? "bg-gh-danger text-white animate-pulse" 
+                                  : "bg-gh-border text-gh-text-muted"
                             }`}>
                               {isComplete ? (
                                 <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -873,10 +873,10 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
                             {/* Step label */}
                             <span className={`text-sm transition-colors ${
                               isComplete 
-                                ? "text-[#3fb950]" 
+                                ? "text-gh-success-fg" 
                                 : isCurrent 
                                   ? "text-white font-medium" 
-                                  : "text-[#8b949e]"
+                                  : "text-gh-text-muted"
                             }`}>
                               {step.label}
                               {isCurrent && <span className="ml-1.5 inline-block animate-pulse">...</span>}
@@ -887,9 +887,9 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
                     </div>
                     
                     {/* Progress bar */}
-                    <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-[#30363d]">
+                    <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-gh-border">
                       <div 
-                        className="h-full rounded-full bg-gradient-to-r from-[#da3633] to-[#f85149] transition-all duration-500"
+                        className="h-full rounded-full bg-gradient-to-r from-gh-danger to-gh-danger-emphasis transition-all duration-500"
                         style={{ width: `${(loadingStep / loadingSteps.length) * 100}%` }}
                       />
                     </div>
@@ -897,7 +897,7 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
                 ) : (
                   <button
                     type="submit"
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[#da3633] px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#f85149]"
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-gh-danger px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-gh-danger-emphasis"
                   >
                     <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -910,9 +910,9 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
 
             {/* Branch Success Message */}
             {branchSuccess && (
-              <div className="rounded-lg border border-[#238636]/30 bg-[#238636]/10 p-4">
+              <div className="rounded-lg border border-gh-success/30 bg-gh-success/10 p-4">
                 <div className="mb-3 flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-[#3fb950]">
+                  <div className="flex items-center gap-2 text-gh-success-fg">
                     <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
@@ -920,22 +920,22 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
                   </div>
                   <button
                     onClick={() => setBranchSuccess(null)}
-                    className="text-[#8b949e] hover:text-white"
+                    className="text-gh-text-muted hover:text-white"
                   >
                     <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>
                   </button>
                 </div>
-                <p className="mb-3 text-xs text-[#8b949e]">
-                  <code className="rounded bg-[#30363d] px-1.5 py-0.5 font-mono text-[#3fb950]">{branchSuccess}</code>
+                <p className="mb-3 text-xs text-gh-text-muted">
+                  <code className="rounded bg-gh-border px-1.5 py-0.5 font-mono text-gh-success-fg">{branchSuccess}</code>
                 </p>
                 <button
                   onClick={() => {
                     handleBranchSelect(branchSuccess);
                     setBranchSuccess(null);
                   }}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[#238636] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#2ea043]"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-gh-success px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-gh-success-emphasis"
                 >
                   <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
@@ -947,12 +947,12 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
           </div>
         ) : selectedCommit ? (
           <div className="flex flex-1 items-center justify-center">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#30363d] border-t-[#238636]" />
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-gh-border border-t-gh-success" />
           </div>
         ) : (
           <div className="flex flex-1 flex-col items-center justify-center gap-4 text-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-[#30363d] bg-[#161b22]">
-              <svg className="h-8 w-8 text-[#8b949e]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-gh-border bg-gh-canvas-subtle">
+              <svg className="h-8 w-8 text-gh-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -963,7 +963,7 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
             </div>
             <div className="flex flex-col gap-1">
               <h3 className="text-lg font-medium text-white">No commit selected</h3>
-              <p className="max-w-xs text-sm text-[#8b949e]">Select a commit from the list to view changed files</p>
+              <p className="max-w-xs text-sm text-gh-text-muted">Select a commit from the list to view changed files</p>
             </div>
           </div>
         )}
