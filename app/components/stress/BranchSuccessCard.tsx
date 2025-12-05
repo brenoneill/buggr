@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/app/components/inputs/Button";
+import { Card } from "@/app/components/Card";
 
 interface BranchSuccessCardProps {
   /**
@@ -26,7 +27,7 @@ interface BranchSuccessCardProps {
  */
 export function BranchSuccessCard({ branchName, onDismiss, onShowBranch }: BranchSuccessCardProps) {
   return (
-    <div className="rounded-lg border border-gh-success/30 bg-gh-success/10 p-4">
+    <Card variant="success">
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2 text-gh-success-fg">
           <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -66,7 +67,7 @@ export function BranchSuccessCard({ branchName, onDismiss, onShowBranch }: Branc
         </svg>
         Show Stressed Branch
       </Button>
-    </div>
+    </Card>
   );
 }
 

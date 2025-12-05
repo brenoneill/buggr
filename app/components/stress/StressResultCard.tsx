@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/app/components/inputs/Button";
+import { Card } from "@/app/components/Card";
 
 interface StressResult {
   message: string;
@@ -32,7 +33,7 @@ interface StressResultCardProps {
  */
 export function StressResultCard({ result, authorName, onDismiss }: StressResultCardProps) {
   return (
-    <div className="rounded-lg border border-gh-danger/30 bg-gh-danger/10 p-4">
+    <Card variant="danger">
       <div className="mb-3 flex items-center justify-between">
         <h4 className="flex items-center gap-2 font-medium text-gh-danger-fg">
           <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -76,7 +77,7 @@ export function StressResultCard({ result, authorName, onDismiss }: StressResult
             </div>
           ))}
       </div>
-    </div>
+    </Card>
   );
 }
 

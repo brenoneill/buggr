@@ -1,5 +1,7 @@
 "use client";
 
+import { Card } from "@/app/components/Card";
+
 interface LoadingStep {
   label: string;
   icon?: string;
@@ -36,7 +38,7 @@ export function LoadingProgress({ steps, currentStep, title, subtitle }: Loading
   const currentLabel = steps[currentStep - 1]?.label || "Preparing...";
 
   return (
-    <div className="rounded-lg border border-gh-border bg-gh-canvas p-4">
+    <Card variant="inset">
       {/* Progress header */}
       <div className="mb-4 flex items-center gap-3">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-gh-border border-t-gh-danger" />
@@ -99,7 +101,7 @@ export function LoadingProgress({ steps, currentStep, title, subtitle }: Loading
           style={{ width: `${(currentStep / steps.length) * 100}%` }}
         />
       </div>
-    </div>
+    </Card>
   );
 }
 

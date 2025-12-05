@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/app/components/inputs/Button";
+import { Card } from "@/app/components/Card";
 import { StressLevelSelector } from "./StressLevelSelector";
 import { LoadingProgress } from "./LoadingProgress";
 
@@ -97,10 +98,7 @@ export function CreateBranchForm({
   const fullBranchName = getFullBranchName(baseBranch, timestamp, branchSuffix);
 
   return (
-    <form
-      onSubmit={onSubmit}
-      className="flex flex-col gap-3 rounded-lg border border-gh-border bg-gh-canvas-subtle p-4"
-    >
+    <Card as="form" onSubmit={onSubmit} className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <label className="text-sm font-medium text-white">
           Create stressed branch from this commit
@@ -180,7 +178,7 @@ export function CreateBranchForm({
           Create & Stress
         </Button>
       )}
-    </form>
+    </Card>
   );
 }
 
