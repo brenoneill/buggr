@@ -449,7 +449,7 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
             <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#30363d] border-t-[#238636]" />
           </div>
         ) : selectedCommit && commitDetails ? (
-          <div className="flex h-full flex-col gap-6 overflow-hidden">
+          <div className="flex h-full flex-col gap-6 overflow-y-auto">
             {/* Commit Header */}
             <div className="flex items-start gap-4">
               {selectedCommit.author?.avatar_url ? (
