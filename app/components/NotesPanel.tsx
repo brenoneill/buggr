@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNotes } from "@/app/context/NotesContext";
 
 /**
@@ -40,6 +40,15 @@ export function NotesButton({ onClick }: { onClick: () => void }) {
 export function NotesPanel() {
   const [isOpen, setIsOpen] = useState(false);
   const { notes, unreadCount, markAsRead, markAllAsRead, clearNotes } = useNotes();
+  const prevNotesCountRef = useRef(notes.length);
+
+  // Auto-open panel when a new note is added
+  useEffect(() => {
+    if (notes.length > prevNotesCountRef.current) {
+      setIsOpen(true);
+    }
+    prevNotesCountRef.current = notes.length;
+  }, [notes.length]);
 
   /**
    * Formats a date to a relative time string.
