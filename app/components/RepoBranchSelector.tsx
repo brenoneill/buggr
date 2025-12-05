@@ -262,14 +262,11 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
       setStressLevel("medium");
       setShowCreateBranch(false);
       
-      // Refresh branches list and switch to the new branch
+      // Refresh branches list (but don't auto-switch)
       const branchesResponse = await fetch(`/api/github/branches?owner=${selectedRepo.owner.login}&repo=${selectedRepo.name}`);
       if (branchesResponse.ok) {
         const branchesData = await branchesResponse.json();
         setBranches(branchesData);
-        
-        // Switch to the newly created branch
-        handleBranchSelect(fullBranchName);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create branch");
@@ -600,7 +597,7 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
                     <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                     </svg>
-                    {selectedCommit.author?.login ?? selectedCommit.commit.author.name} is now stressed! 😈
+                    {selectedCommit.author?.login ?? selectedCommit.commit.author.name}'s commit is now stressed! 😈
                   </h4>
                   <button
                     onClick={() => setStressResult(null)}
@@ -817,18 +814,37 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
 
             {/* Branch Success Message */}
             {branchSuccess && (
-              <div className="flex items-center gap-2 rounded-lg border border-[#238636]/30 bg-[#238636]/10 px-4 py-3 text-sm text-[#3fb950]">
-                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                Branch <code className="font-mono">{branchSuccess}</code> created successfully!
+              <div className="rounded-lg border border-[#238636]/30 bg-[#238636]/10 p-4">
+                <div className="mb-3 flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-[#3fb950]">
+                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span className="text-sm font-medium">Branch created successfully!</span>
+                  </div>
+                  <button
+                    onClick={() => setBranchSuccess(null)}
+                    className="text-[#8b949e] hover:text-white"
+                  >
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+                <p className="mb-3 text-xs text-[#8b949e]">
+                  <code className="rounded bg-[#30363d] px-1.5 py-0.5 font-mono text-[#3fb950]">{branchSuccess}</code>
+                </p>
                 <button
-                  onClick={() => setBranchSuccess(null)}
-                  className="ml-auto text-[#3fb950] hover:text-white"
+                  onClick={() => {
+                    handleBranchSelect(branchSuccess);
+                    setBranchSuccess(null);
+                  }}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[#238636] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#2ea043]"
                 >
                   <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                   </svg>
+                  Show Stressed Branch
                 </button>
               </div>
             )}
