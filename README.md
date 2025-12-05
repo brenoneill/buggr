@@ -1,22 +1,29 @@
 # 🔥 stresst
 
-**Stress test your developers with AI-generated bugs**
+**Insurance against vibe coding**
 
-stresst is a developer training tool that uses AI to introduce realistic, subtle bugs into code. Perfect for:
+AI code generation is everywhere. Cursor, Copilot, ChatGPT — developers are shipping code faster than ever. But here's the uncomfortable question: **do they actually understand what they're shipping?**
 
-- 🎓 **Training junior developers** to improve debugging skills
-- 🧪 **Code review practice** - can you spot the bugs?
-- 🎮 **Gamified learning** - compete to find and fix bugs fastest
-- 📋 **Interview preparation** - practice real-world debugging scenarios
+When the AI-generated code breaks (and it will), can your team debug it? Or are they just prompting until the errors go away?
+
+**stresst** is a training tool that stress-tests developer comprehension. It uses AI to introduce realistic, subtle bugs into real codebases — the kind of bugs that require *actual understanding* to find and fix. No amount of "please fix" prompts will help.
+
+### Why stresst?
+
+- 🛡️ **Verify comprehension** — Ensure developers understand the code they're shipping, not just generating
+- 🔍 **Build debugging muscle** — AI can write code, but debugging is still a human skill
+- 🎯 **Identify skill gaps** — Find out who can navigate a codebase and who's just along for the ride
+- 🎮 **Gamified training** — Make learning fun with configurable difficulty levels
+- 📋 **Interview tool** — Test candidates with real debugging scenarios, not leetcode
 
 ## How It Works
 
-1. **Connect your GitHub account** - stresst uses OAuth to access your repositories
-2. **Select a repository and branch** - choose the code you want to stress
-3. **Pick a commit** - select which files to introduce bugs into
-4. **Configure stress level** - Low (1-2 bugs), Medium (2-3 bugs), or High (3-5 bugs)
-5. **Create stressed branch** - AI analyzes your code and introduces realistic bugs
-6. **Share with your team** - send the bug report to a colleague to debug
+1. **Connect your GitHub account** — stresst uses OAuth to access your repositories
+2. **Select a repository and branch** — choose the code you want to stress
+3. **Pick a commit** — select which files to introduce bugs into
+4. **Configure stress level** — Low (1-2 bugs), Medium (2-3 bugs), or High (3-5 bugs)
+5. **Create stressed branch** — AI analyzes your code and introduces realistic bugs
+6. **Share with your team** — send the bug report to a colleague to debug
 
 ## Features
 
@@ -30,9 +37,9 @@ Uses Claude AI to introduce subtle, realistic bugs that developers actually make
 - And many more...
 
 ### 📊 Configurable Stress Levels
-- **🌱 Low** - 1-2 straightforward bugs, easier to spot
-- **🔥 Medium** - 2-3 subtle bugs, requires careful review
-- **💀 High** - 3-5 devious bugs, may include spaghetti code
+- **🌱 Low** — 1-2 straightforward bugs, easier to spot
+- **🔥 Medium** — 2-3 subtle bugs, requires careful review
+- **💀 High** — 3-5 devious bugs, may include spaghetti code
 
 ### 🎯 Focus Areas
 Optionally specify what you want to test (e.g., "async/await", "null handling", "array bounds")
@@ -107,7 +114,7 @@ Open [http://localhost:3000](http://localhost:3000) to get started.
 2. Select a repository from the dropdown
 3. Choose a branch to base the stressed version on
 4. Click on a commit to see the changed files
-5. Click "Stress this Commit"
+5. Click "Stress out this commit"
 6. Configure:
    - Branch name suffix (optional)
    - Stress level (Low/Medium/High)
@@ -121,7 +128,7 @@ Open [http://localhost:3000](http://localhost:3000) to get started.
 Once a stressed branch is created:
 
 1. Click "Show Stressed Branch" to view the commits
-2. Look for commits starting with "🔥" - these contain the bugs
+2. Look for commits starting with "🔥" — these contain the bugs
 3. Review the code changes and try to identify what's wrong
 4. Compare with the original branch to verify your findings
 
