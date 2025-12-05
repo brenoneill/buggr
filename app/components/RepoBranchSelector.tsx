@@ -36,8 +36,18 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
   const [stressContext, setStressContext] = useState("");
   const [stressLevel, setStressLevel] = useState<"low" | "medium" | "high">("medium");
   const [creatingBranch, setCreatingBranch] = useState(false);
+  const [loadingStep, setLoadingStep] = useState<number>(0);
   const [branchSuccess, setBranchSuccess] = useState<string | null>(null);
   const [timestamp, setTimestamp] = useState(() => generateTimestamp());
+
+  // Loading steps for the stress process
+  const loadingSteps = [
+    { label: "Creating branch", icon: "branch" },
+    { label: "Analyzing files", icon: "search" },
+    { label: "Stressing out your code", icon: "stress" },
+    { label: "Committing changes", icon: "commit" },
+    { label: "Finalizing", icon: "check" },
+  ];
   
   // Stress result state
   const [stressResult, setStressResult] = useState<{ message: string; results: { file: string; success: boolean; changes?: string[] }[]; symptoms?: string[] } | null>(null);
@@ -174,12 +184,14 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
     }
     
     setCreatingBranch(true);
+    setLoadingStep(0);
     setError(null);
     setBranchSuccess(null);
     setStressResult(null);
 
     try {
       // Step 1: Create the branch
+      setLoadingStep(1);
       const response = await fetch("/api/github/branch", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -196,7 +208,13 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
         throw new Error(data.error || "Failed to create branch");
       }
 
-      // Step 2: Automatically introduce stress on the new branch
+      // Step 2: Analyze files
+      setLoadingStep(2);
+      // Small delay to show the step
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Step 3: Introduce stress on the new branch
+      setLoadingStep(3);
       const stressResponse = await fetch("/api/github/stress", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -210,7 +228,13 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
         }),
       });
 
+      // Step 4: Committing changes
+      setLoadingStep(4);
       const stressData = await stressResponse.json();
+
+      // Step 5: Finalizing
+      setLoadingStep(5);
+      await new Promise(resolve => setTimeout(resolve, 300));
 
       if (!stressResponse.ok) {
         // Branch was created but stress failed - inform user
@@ -251,6 +275,7 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
       setError(err instanceof Error ? err.message : "Failed to create branch");
     } finally {
       setCreatingBranch(false);
+      setLoadingStep(0);
     }
   }
 
@@ -711,21 +736,82 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
                   </div>
                 </div>
 
-                {/* Submit button */}
-                <button
-                  type="submit"
-                  disabled={creatingBranch}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[#da3633] px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#f85149] disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {creatingBranch ? (
-                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                  ) : (
+                {/* Submit button or Loading progress */}
+                {creatingBranch ? (
+                  <div className="rounded-lg border border-[#30363d] bg-[#0d1117] p-4">
+                    {/* Progress header */}
+                    <div className="mb-4 flex items-center gap-3">
+                      <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#30363d] border-t-[#da3633]" />
+                      <div>
+                        <p className="text-sm font-medium text-white">
+                          {loadingSteps[loadingStep - 1]?.label || "Preparing..."}
+                        </p>
+                        <p className="text-xs text-[#8b949e]">This may take a moment</p>
+                      </div>
+                    </div>
+                    
+                    {/* Progress steps */}
+                    <div className="space-y-2">
+                      {loadingSteps.map((step, index) => {
+                        const stepNum = index + 1;
+                        const isComplete = loadingStep > stepNum;
+                        const isCurrent = loadingStep === stepNum;
+                        const isPending = loadingStep < stepNum;
+                        
+                        return (
+                          <div key={step.label} className="flex items-center gap-3">
+                            {/* Step indicator */}
+                            <div className={`flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-xs font-medium transition-colors ${
+                              isComplete 
+                                ? "bg-[#238636] text-white" 
+                                : isCurrent 
+                                  ? "bg-[#da3633] text-white animate-pulse" 
+                                  : "bg-[#30363d] text-[#8b949e]"
+                            }`}>
+                              {isComplete ? (
+                                <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                </svg>
+                              ) : (
+                                stepNum
+                              )}
+                            </div>
+                            
+                            {/* Step label */}
+                            <span className={`text-sm transition-colors ${
+                              isComplete 
+                                ? "text-[#3fb950]" 
+                                : isCurrent 
+                                  ? "text-white font-medium" 
+                                  : "text-[#8b949e]"
+                            }`}>
+                              {step.label}
+                              {isCurrent && <span className="ml-1.5 inline-block animate-pulse">...</span>}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    
+                    {/* Progress bar */}
+                    <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-[#30363d]">
+                      <div 
+                        className="h-full rounded-full bg-gradient-to-r from-[#da3633] to-[#f85149] transition-all duration-500"
+                        style={{ width: `${(loadingStep / loadingSteps.length) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    type="submit"
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[#da3633] px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#f85149]"
+                  >
                     <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                     </svg>
-                  )}
-                  {creatingBranch ? "Creating & Stressing..." : "Create & Stress"}
-                </button>
+                    Create & Stress
+                  </button>
+                )}
               </form>
             )}
 
