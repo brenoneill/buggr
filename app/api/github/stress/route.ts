@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
             repo,
             filePath,
             modifiedContent,
-            `🔥 Stress introduced in ${filePath}`,
+            `🔥 ${filePath} is stressed out`,
             fileContent.sha,
             branch
           );
@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
     const uniqueSymptoms = [...new Set(allSymptoms)];
 
     return NextResponse.json({
-      message: `Stress introduced to ${successCount} of ${files.length} files`,
+      message: `${successCount} of ${files.length} files have been stressed out`,
       results,
       symptoms: uniqueSymptoms,
     });
