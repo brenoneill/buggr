@@ -59,6 +59,8 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
   const [deletingBranch, setDeletingBranch] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [copiedBranchLink, setCopiedBranchLink] = useState(false);
+  const [deletingAllBranches, setDeletingAllBranches] = useState(false);
+  const [showDeleteAllConfirm, setShowDeleteAllConfirm] = useState(false);
 
   // Stress result state
   const [stressResult, setStressResult] = useState<{
@@ -375,6 +377,64 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
     }
   }
 
+  /**
+   * Deletes all branches that include "stresst-test-" in their name.
+   */
+  async function handleDeleteAllStressedBranches() {
+    if (!selectedRepo) return;
+
+    setDeletingAllBranches(true);
+    setError(null);
+    setShowDeleteAllConfirm(false);
+
+    try {
+      const response = await fetch("/api/github/branches/delete-all", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          owner: selectedRepo.owner.login,
+          repo: selectedRepo.name,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to delete branches");
+      }
+
+      const data = await response.json();
+
+      // Refresh branches list
+      const branchesResponse = await fetch(
+        `/api/github/branches?owner=${selectedRepo.owner.login}&repo=${selectedRepo.name}`
+      );
+      if (branchesResponse.ok) {
+        const branchesData = await branchesResponse.json();
+        setBranches(branchesData);
+      }
+
+      // Clear selection if the current branch was deleted
+      if (selectedBranch && data.deleted.includes(selectedBranch)) {
+        setSelectedBranch(null);
+        setSelectedCommit(null);
+        setCommitDetails(null);
+        setCommits([]);
+      }
+
+      // Show success message
+      if (data.count > 0) {
+        setError(null);
+        // Could show a success message here if needed
+      } else {
+        setError("No stresst-test- branches found to delete");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete branches");
+    } finally {
+      setDeletingAllBranches(false);
+    }
+  }
+
   return (
     <div className="flex h-screen w-full">
       {/* Left Panel - Selection & Commits */}
@@ -422,18 +482,70 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
                   </div>
                 </div>
               ) : (
-                <Select
-                  label="Branch"
-                  value={selectedBranch ?? ""}
-                  onChange={(e) => {
-                    if (e.target.value) handleBranchSelect(e.target.value);
-                  }}
-                  placeholder="Choose a branch..."
-                  options={branches.map((branch) => ({
-                    value: branch.name,
-                    label: `${branch.name}${branch.protected ? " 🔒" : ""}`,
-                  }))}
-                />
+                <>
+                  <Select
+                    label="Branch"
+                    value={selectedBranch ?? ""}
+                    onChange={(e) => {
+                      if (e.target.value) handleBranchSelect(e.target.value);
+                    }}
+                    placeholder="Choose a branch..."
+                    options={branches.map((branch) => ({
+                      value: branch.name,
+                      label: `${branch.name}${branch.protected ? " 🔒" : ""}`,
+                    }))}
+                  />
+                  {branches.some((b) => b.name.includes("stresst-test-")) && (
+                    <div className="flex items-center justify-end">
+                      {showDeleteAllConfirm ? (
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-gh-danger-fg">
+                            Delete all {branches.filter((b) => b.name.includes("stresst-test-")).length} stressed branches?
+                          </span>
+                          <Button
+                            variant="danger"
+                            size="sm"
+                            onClick={handleDeleteAllStressedBranches}
+                            disabled={deletingAllBranches}
+                          >
+                            {deletingAllBranches ? "Deleting..." : "Yes"}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setShowDeleteAllConfirm(false)}
+                            disabled={deletingAllBranches}
+                          >
+                            No
+                          </Button>
+                        </div>
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setShowDeleteAllConfirm(true)}
+                          disabled={deletingAllBranches}
+                          className="text-gh-text-muted hover:text-gh-danger-fg"
+                        >
+                          <svg
+                            className="h-3.5 w-3.5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                            />
+                          </svg>
+                          Delete all stressed branches
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </>
               )}
             </>
           )}
