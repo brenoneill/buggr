@@ -5,7 +5,7 @@ import { deleteBranch } from "@/lib/github";
 /**
  * DELETE /api/github/branches/delete-all
  * 
- * Deletes all branches that include "stresst-test-" in their name.
+ * Deletes all branches that include "stresst-" in their name.
  * Requires owner and repo in the request body.
  */
 export async function DELETE(request: NextRequest) {
@@ -46,14 +46,14 @@ export async function DELETE(request: NextRequest) {
 
     const branches = await branchesResponse.json();
 
-    // Filter to only stresst-test- branches
+    // Filter to only stresst- branches
     const stresstBranches = branches
-      .filter((branch: { name: string }) => branch.name.includes("stresst-test-"))
+      .filter((branch: { name: string }) => branch.name.includes("stresst-"))
       .map((branch: { name: string }) => branch.name);
 
     if (stresstBranches.length === 0) {
       return NextResponse.json({
-        message: "No stresst-test- branches found",
+        message: "No stresst- branches found",
         deleted: [],
         count: 0,
       });
@@ -78,7 +78,7 @@ export async function DELETE(request: NextRequest) {
     const successCount = results.filter((r) => r.success).length;
 
     return NextResponse.json({
-      message: `Deleted ${successCount} of ${stresstBranches.length} stresst-test- branches`,
+      message: `Deleted ${successCount} of ${stresstBranches.length} stresst- branches`,
       deleted: results.filter((r) => r.success).map((r) => r.branch),
       failed: results.filter((r) => !r.success),
       count: successCount,

@@ -378,7 +378,7 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
   }
 
   /**
-   * Deletes all branches that include "stresst-test-" in their name.
+   * Deletes all branches that include "stresst-" in their name.
    */
   async function handleDeleteAllStressedBranches() {
     if (!selectedRepo) return;
@@ -426,7 +426,7 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
         setError(null);
         // Could show a success message here if needed
       } else {
-        setError("No stresst-test- branches found to delete");
+        setError("No stresst- branches found to delete");
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to delete branches");
@@ -495,12 +495,12 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
                       label: `${branch.name}${branch.protected ? " 🔒" : ""}`,
                     }))}
                   />
-                  {branches.some((b) => b.name.includes("stresst-test-")) && (
+                  {branches.some((b) => b.name.includes("stresst-")) && (
                     <div className="flex items-center justify-end">
                       {showDeleteAllConfirm ? (
                         <div className="flex items-center gap-2">
                           <span className="text-xs text-gh-danger-fg">
-                            Delete all {branches.filter((b) => b.name.includes("stresst-test-")).length} stressed branches?
+                            Delete all {branches.filter((b) => b.name.includes("stresst-")).length} stressed branches?
                           </span>
                           <Button
                             variant="danger"
@@ -566,7 +566,7 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
                 Recent commits on <span className="font-mono text-white">{selectedBranch}</span>
               </h3>
 
-              {selectedBranch.includes("stresst-test-") && (
+              {selectedBranch.includes("stresst-") && (
                 <div className="flex items-center gap-2">
                   {showDeleteConfirm ? (
                     <div className="flex items-center gap-2">
@@ -767,7 +767,7 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
                 </a>
               )}
 
-              {selectedBranch && selectedBranch.includes("stresst-test-") && !showCreateBranch && (
+              {selectedBranch && selectedBranch.includes("stresst-") && !showCreateBranch && (
                 <Button
                   variant="secondary"
                   onClick={handleCopyBranchLink}
