@@ -24,8 +24,8 @@ const STRESS_CONFIGS: Record<StressLevel, StressConfig> = {
     description: "The bugs should require careful code review to find - off-by-one errors, subtle async issues, edge case failures. A mid-level developer should need to trace through the logic to find them. You MAY optionally add some convoluted or overly-complex code that obscures the bug - realistic 'clever' code that a developer might write.",
   },
   high: {
-    bugCountMin: 3,
-    bugCountMax: 5,
+    bugCountMin: 2,
+    bugCountMax: 3,
     subtlety: "deviously subtle",
     description: "The bugs should be very hard to find - race conditions, subtle state mutations, edge cases that only fail under specific conditions, cascading errors where one bug masks another. Even senior developers should need debugging tools and careful analysis. You are ENCOURAGED to add bloated, spaghetti code - overly nested logic, unnecessary abstractions, confusing control flow - that makes bugs harder to trace. This should still be 'realistic' code that an over-engineering developer might actually write.",
   },
