@@ -13,9 +13,9 @@ const MAX_FILE_LINES_MULTIPLE = 2000; // If multiple files, limit to 2000 lines 
  * Uses AI to introduce subtle breaking changes to files that were modified in a commit.
  * Requires owner, repo, branch, and files (array of file paths) in the request body.
  * 
+ * Randomly selects ONE file from the provided files and applies all bugs to that single file.
  * Files exceeding the line limit are skipped to keep token usage reasonable.
- * If only one valid file is being processed, it can be up to 5000 lines.
- * If multiple files are being processed, each is limited to 2000 lines.
+ * Selected file can be up to 5000 lines.
  */
 export async function POST(request: NextRequest) {
   const session = await auth();
@@ -63,8 +63,8 @@ export async function POST(request: NextRequest) {
       return ["ts", "tsx", "js", "jsx", "py", "java", "go", "rs", "c", "cpp", "h", "cs"].includes(ext || "");
     });
     
-    // If only one valid file, allow up to 5000 lines; otherwise limit to 2000 per file
-    const maxFileLines = validCodeFiles.length === 1 ? MAX_FILE_LINES_SINGLE : MAX_FILE_LINES_MULTIPLE;
+    // Since we're only processing one file, allow up to 5000 lines
+    const maxFileLines = MAX_FILE_LINES_SINGLE;
 
     // First, collect all valid files that we can process (fetch content and check size)
     interface ProcessableFile {
@@ -120,58 +120,67 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Distribute bugs across processable files
-    // Simple distribution: randomly assign bugs to files, ensuring all bugs are used
-    const bugDistribution: number[] = new Array(processableFiles.length).fill(0);
-    let remainingBugs = totalBugCount;
-    
-    // Distribute bugs randomly across files
-    while (remainingBugs > 0 && processableFiles.length > 0) {
-      const randomFileIndex = Math.floor(Math.random() * processableFiles.length);
-      bugDistribution[randomFileIndex]++;
-      remainingBugs--;
+    // Randomly pick ONE file to stress
+    if (processableFiles.length === 0) {
+      return NextResponse.json({
+        message: "No processable files found",
+        results,
+        symptoms: [],
+      });
     }
 
-    // Process each file with its assigned bug count
+    // Randomly select one file
+    const selectedFileIndex = Math.floor(Math.random() * processableFiles.length);
+    const selectedFile = processableFiles[selectedFileIndex];
+
+    // Mark all other files as skipped
     for (let i = 0; i < processableFiles.length; i++) {
-      const { filePath, content: decodedContent, sha } = processableFiles[i];
-      const bugsForThisFile = bugDistribution[i];
-      
-      try {
-        // Use AI to introduce subtle stress
-        const { content: modifiedContent, changes, symptoms } = await introduceAIStress(
-          decodedContent, 
-          filePath, 
-          stressContext, 
-          stressLevel,
-          bugsForThisFile > 0 ? bugsForThisFile : undefined
-        );
-
-        // Only update if changes were made
-        if (changes.length > 0 && modifiedContent !== decodedContent) {
-          await updateFile(
-            session.accessToken,
-            owner,
-            repo,
-            filePath,
-            modifiedContent,
-            `🔥 ${filePath} is stressed out`,
-            sha,
-            branch
-          );
-
-          results.push({ file: filePath, success: true, changes, symptoms });
-          allSymptoms.push(...symptoms);
-        } else {
-          results.push({ file: filePath, success: false, error: "No changes made" });
-        }
-      } catch (error) {
-        results.push({
-          file: filePath,
-          success: false,
-          error: error instanceof Error ? error.message : "Unknown error",
+      if (i !== selectedFileIndex) {
+        results.push({ 
+          file: processableFiles[i].filePath, 
+          success: false, 
+          error: "Not selected for stress testing" 
         });
       }
+    }
+
+    // Apply all bugs to the selected file
+    try {
+      const { filePath, content: decodedContent, sha } = selectedFile;
+      
+      // Use AI to introduce subtle stress with all bugs in this single file
+      const { content: modifiedContent, changes, symptoms } = await introduceAIStress(
+        decodedContent, 
+        filePath, 
+        stressContext, 
+        stressLevel,
+        totalBugCount
+      );
+
+      // Only update if changes were made
+      if (changes.length > 0 && modifiedContent !== decodedContent) {
+        await updateFile(
+          session.accessToken,
+          owner,
+          repo,
+          filePath,
+          modifiedContent,
+          `🔥 ${filePath} is stressed out`,
+          sha,
+          branch
+        );
+
+        results.push({ file: filePath, success: true, changes, symptoms });
+        allSymptoms.push(...symptoms);
+      } else {
+        results.push({ file: filePath, success: false, error: "No changes made" });
+      }
+    } catch (error) {
+      results.push({
+        file: selectedFile.filePath,
+        success: false,
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
     }
 
     const successCount = results.filter((r) => r.success).length;

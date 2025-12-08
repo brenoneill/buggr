@@ -33,7 +33,7 @@ const levelConfig = {
   high: {
     emoji: "💀",
     label: "High",
-    description: "3-5 devious bugs, may require deep debugging",
+    description: "2-3 devious bugs, requires deep debugging",
     activeClass: "bg-gh-danger text-white",
   },
 };
