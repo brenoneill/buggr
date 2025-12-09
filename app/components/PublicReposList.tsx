@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import type { GitHubRepo } from "@/lib/github";
+import { Button } from "@/app/components/inputs/Button";
 
 interface PublicReposListProps {
   /** Callback when a repo is successfully forked */
@@ -194,10 +195,10 @@ export function PublicReposList({ onForkSuccess }: PublicReposListProps) {
                 </a>
                 
                 {/* Fork button */}
-                <button
+                <Button
+                  size="sm"
                   onClick={() => handleFork(repo)}
                   disabled={isForking || forkingRepo !== null}
-                  className="flex items-center gap-1.5 rounded-md bg-gh-success px-2.5 py-1.5 text-xs font-medium text-white transition-colors hover:bg-gh-success-emphasis disabled:cursor-wait disabled:opacity-70"
                   title="Fork to your account"
                 >
                   {isForking ? (
@@ -213,7 +214,7 @@ export function PublicReposList({ onForkSuccess }: PublicReposListProps) {
                     </svg>
                   )}
                   Fork
-                </button>
+                </Button>
               </div>
             </div>
           );
