@@ -5,6 +5,9 @@ export interface GitHubRepo {
   name: string;
   full_name: string;
   private: boolean;
+  description: string | null;
+  stargazers_count: number;
+  language: string | null;
   owner: {
     login: string;
   };
@@ -51,6 +54,31 @@ export interface GitHubCommitDetails extends GitHubCommit {
     additions: number;
     deletions: number;
   };
+}
+
+/**
+ * Fetches public repositories from a specific GitHub user or organization.
+ * Does not require authentication.
+ * 
+ * @param username - GitHub username or organization name
+ * @returns Array of public repository objects
+ */
+export async function fetchPublicRepos(username: string): Promise<GitHubRepo[]> {
+  const response = await fetch(
+    `${GITHUB_API_BASE}/users/${username}/repos?type=public&sort=updated&per_page=10`,
+    {
+      headers: {
+        Accept: "application/vnd.github.v3+json",
+      },
+      next: { revalidate: 300 }, // Cache for 5 minutes
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch public repos: ${response.statusText}`);
+  }
+
+  return response.json();
 }
 
 /**
