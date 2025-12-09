@@ -6,6 +6,7 @@ import { useNotes } from "@/app/context/NotesContext";
 import { NotesPanel } from "@/app/components/NotesPanel";
 import { Select } from "@/app/components/inputs/Select";
 import { Button } from "@/app/components/inputs/Button";
+import { TextButton } from "@/app/components/inputs/TextButton";
 import { EmptyState, EmptyStateIcons } from "@/app/components/EmptyState";
 import { CommitCard } from "@/app/components/commits/CommitCard";
 import { FileChangeList } from "@/app/components/commits/FileChangeList";
@@ -505,7 +506,7 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
         {/* Action Buttons Row */}
         {selectedRepo && (
           <div className="mt-2 flex items-center justify-between">
-            <button
+            <TextButton
               onClick={() => {
                 setSelectedRepo(null);
                 setSelectedBranch(null);
@@ -517,14 +518,13 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
                 setStressResult(null);
                 setShowCreateBranch(false);
               }}
-              className="flex items-center gap-1 rounded px-2 py-1.5 text-xs text-gh-text-muted transition-colors hover:bg-gh-canvas-subtle hover:text-white"
               title="Clear selection"
             >
               <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
               Clear selection
-            </button>
+            </TextButton>
 
             {branches.some((b) => b.name.includes("stresst-")) && (
               <>
@@ -541,22 +541,18 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
                     >
                       {deletingAllBranches ? "Deleting..." : "Yes"}
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
+                    <TextButton
                       onClick={() => setShowDeleteAllConfirm(false)}
                       disabled={deletingAllBranches}
                     >
                       No
-                    </Button>
+                    </TextButton>
                   </div>
                 ) : (
-                  <Button
-                    variant="ghost"
-                    size="sm"
+                  <TextButton
+                    variant="danger"
                     onClick={() => setShowDeleteAllConfirm(true)}
                     disabled={deletingAllBranches}
-                    className="text-gh-text-muted hover:text-gh-danger-fg"
                   >
                     <svg
                       className="h-3.5 w-3.5"
@@ -572,7 +568,7 @@ export function RepoBranchSelector({ repos, accessToken }: RepoBranchSelectorPro
                       />
                     </svg>
                     Delete all stressed branches
-                  </Button>
+                  </TextButton>
                 )}
               </>
             )}
