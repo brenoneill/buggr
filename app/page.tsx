@@ -1,6 +1,7 @@
 import { auth, signIn, signOut } from "@/auth";
 import { fetchUserRepos } from "@/lib/github";
 import { RepoBranchSelector } from "./components/RepoBranchSelector";
+import { Button } from "./components/inputs/Button";
 
 export default async function Home() {
   const session = await auth();
@@ -15,11 +16,11 @@ export default async function Home() {
     return (
       <div className="relative flex min-h-screen overflow-hidden bg-[#0d1117]">
         {/* Subtle gradient background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[#161b22] via-[#0d1117] to-[#010409]" />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-[#161b22] via-[#0d1117] to-[#010409]" />
         
         {/* Decorative grid pattern */}
         <div 
-          className="absolute inset-0 opacity-[0.03]"
+          className="pointer-events-none absolute inset-0 opacity-[0.03]"
           style={{
             backgroundImage: `linear-gradient(#30363d 1px, transparent 1px), linear-gradient(90deg, #30363d 1px, transparent 1px)`,
             backgroundSize: '60px 60px'
@@ -32,7 +33,7 @@ export default async function Home() {
         </div>
 
         {/* Header with user info and logout */}
-        <div className="absolute right-6 top-6 flex items-center gap-4">
+        <div className="absolute right-6 top-6 z-20 flex items-center gap-4">
           <span className="text-sm text-[#8b949e]">
             <span className="font-semibold text-white">{session.user.name}</span>
           </span>
@@ -42,10 +43,7 @@ export default async function Home() {
               await signOut();
             }}
           >
-            <button
-              type="submit"
-              className="flex items-center gap-2 rounded-lg border border-[#30363d] bg-[#21262d] px-3 py-1.5 text-sm font-medium text-white transition-all hover:bg-[#30363d]"
-            >
+            <Button type="submit" variant="secondary" size="sm">
               <svg
                 className="h-4 w-4"
                 fill="none"
@@ -60,7 +58,7 @@ export default async function Home() {
                 />
               </svg>
               Log out
-            </button>
+            </Button>
           </form>
         </div>
       </div>
