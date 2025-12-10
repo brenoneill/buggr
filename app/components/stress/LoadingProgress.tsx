@@ -1,6 +1,7 @@
 "use client";
 
 import { Card } from "@/app/components/Card";
+import { CheckIcon } from "@/app/components/icons";
 
 export interface LoadingStep {
   label: string;
@@ -69,9 +70,7 @@ export function LoadingProgress({ steps, currentStep, title, subtitle }: Loading
                 }`}
               >
                 {isComplete ? (
-                  <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
+                  <CheckIcon className="h-3.5 w-3.5" />
                 ) : (
                   stepNum
                 )}

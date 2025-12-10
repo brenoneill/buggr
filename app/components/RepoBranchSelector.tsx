@@ -14,6 +14,16 @@ import { CreateBranchForm } from "@/app/components/stress/CreateBranchForm";
 import { StressResultCard } from "@/app/components/stress/StressResultCard";
 import { BranchSuccessCard } from "@/app/components/stress/BranchSuccessCard";
 import { PublicReposList } from "@/app/components/PublicReposList";
+import {
+  GitHubIcon,
+  CloseIcon,
+  TrashIcon,
+  DocumentIcon,
+  CheckIcon,
+  CopyIcon,
+  LightningIcon,
+  ExternalLinkIcon,
+} from "@/app/components/icons";
 
 interface RepoBranchSelectorProps {
   repos: GitHubRepo[];
@@ -457,13 +467,7 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken }: RepoBra
         <div className="mb-6 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-gh-border bg-gh-canvas-subtle">
-              <svg className="h-5 w-5 text-white" fill="currentColor" viewBox="0 0 24 24">
-                <path
-                  fillRule="evenodd"
-                  d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"
-                  clipRule="evenodd"
-                />
-              </svg>
+              <GitHubIcon className="h-5 w-5 text-white" />
             </div>
             <h1 className="font-mono text-xl font-bold text-white">stresst</h1>
           </div>
@@ -532,9 +536,7 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken }: RepoBra
               }}
               title="Clear selection"
             >
-              <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
+              <CloseIcon className="h-3.5 w-3.5" />
               Clear selection
             </TextButton>
 
@@ -566,19 +568,7 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken }: RepoBra
                     onClick={() => setShowDeleteAllConfirm(true)}
                     disabled={deletingAllBranches}
                   >
-                    <svg
-                      className="h-3.5 w-3.5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                      />
-                    </svg>
+                    <TrashIcon className="h-3.5 w-3.5" />
                     Delete all stressed branches
                   </TextButton>
                 )}
@@ -632,36 +622,12 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken }: RepoBra
                       >
                         {copiedBranchLink ? (
                           <>
-                            <svg
-                              className="h-3.5 w-3.5"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M5 13l4 4L19 7"
-                              />
-                            </svg>
+                            <CheckIcon className="h-3.5 w-3.5" />
                             Copied!
                           </>
                         ) : (
                           <>
-                            <svg
-                              className="h-3.5 w-3.5"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-                              />
-                            </svg>
+                            <CopyIcon className="h-3.5 w-3.5" />
                             Copy link
                           </>
                         )}
@@ -671,19 +637,7 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken }: RepoBra
                         className="flex items-center gap-1 rounded px-2 py-1 text-xs text-gh-text-muted transition-colors hover:bg-gh-danger/20 hover:text-gh-danger-fg"
                         title="Delete this branch"
                       >
-                        <svg
-                          className="h-3.5 w-3.5"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                          />
-                        </svg>
+                        <TrashIcon className="h-3.5 w-3.5" />
                         Delete
                       </button>
                     </>
@@ -764,14 +718,7 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken }: RepoBra
             {/* Changed Files */}
             <div className="flex min-h-0 flex-1 flex-col gap-3">
               <h3 className="flex items-center gap-2 text-sm font-medium text-gh-text-muted">
-                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                  />
-                </svg>
+                <DocumentIcon className="h-4 w-4" />
                 {commitDetails.files?.length ?? 0} files changed
               </h3>
 
@@ -787,22 +734,9 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken }: RepoBra
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 rounded-lg border border-gh-border bg-gh-border-muted px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-gh-border"
                 >
-                  <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-                    <path
-                      fillRule="evenodd"
-                      d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
+                  <GitHubIcon className="h-4 w-4" />
                   View on GitHub
-                  <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                    />
-                  </svg>
+                  <ExternalLinkIcon className="h-3 w-3" />
                 </a>
               )}
 
@@ -814,36 +748,12 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken }: RepoBra
                 >
                   {copiedBranchLink ? (
                     <>
-                      <svg
-                        className="h-4 w-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M5 13l4 4L19 7"
-                        />
-                      </svg>
+                      <CheckIcon className="h-4 w-4" />
                       Copied!
                     </>
                   ) : (
                     <>
-                      <svg
-                        className="h-4 w-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-                        />
-                      </svg>
+                      <CopyIcon className="h-4 w-4" />
                       Copy branch link
                     </>
                   )}
@@ -858,14 +768,7 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken }: RepoBra
                     setTimestamp(generateTimestamp());
                   }}
                 >
-                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M13 10V3L4 14h7v7l9-11h-7z"
-                    />
-                  </svg>
+                  <LightningIcon className="h-4 w-4" />
                   Stress out this commit
                 </Button>
               )}

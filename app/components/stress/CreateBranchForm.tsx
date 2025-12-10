@@ -4,6 +4,7 @@ import { Button } from "@/app/components/inputs/Button";
 import { Card } from "@/app/components/Card";
 import { StressLevelSelector } from "./StressLevelSelector";
 import { LoadingProgress, type LoadingStep } from "./LoadingProgress";
+import { CloseIcon, LightningIcon } from "@/app/components/icons";
 
 type StressLevel = "low" | "medium" | "high";
 
@@ -99,14 +100,7 @@ export function CreateBranchForm({
           Create stressed branch from this commit
         </label>
         <Button type="button" variant="ghost" size="icon" onClick={onCancel}>
-          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M6 18L18 6M6 6l12 12"
-            />
-          </svg>
+          <CloseIcon className="h-4 w-4" />
         </Button>
       </div>
 
@@ -162,14 +156,7 @@ export function CreateBranchForm({
         <LoadingProgress steps={loadingSteps} currentStep={loadingStep} />
       ) : (
         <Button type="submit" variant="danger" size="lg" fullWidth>
-          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M13 10V3L4 14h7v7l9-11h-7z"
-            />
-          </svg>
+          <LightningIcon className="h-4 w-4" />
           Create & Stress
         </Button>
       )}

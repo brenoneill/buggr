@@ -2,6 +2,7 @@
 
 import { Button } from "@/app/components/inputs/Button";
 import { Card } from "@/app/components/Card";
+import { LightningIcon, CloseIcon } from "@/app/components/icons";
 
 interface StressResult {
   message: string;
@@ -36,25 +37,11 @@ export function StressResultCard({ result, authorName, onDismiss }: StressResult
     <Card variant="danger">
       <div className="mb-3 flex items-center justify-between">
         <h4 className="flex items-center gap-2 font-medium text-gh-danger-fg">
-          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M13 10V3L4 14h7v7l9-11h-7z"
-            />
-          </svg>
+          <LightningIcon className="h-4 w-4" />
           {authorName}&apos;s commit is now stressed! 😈
         </h4>
         <Button variant="ghost" size="icon" onClick={onDismiss}>
-          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M6 18L18 6M6 6l12 12"
-            />
-          </svg>
+          <CloseIcon className="h-4 w-4" />
         </Button>
       </div>
       <p className="mb-2 text-sm text-gh-danger-fg">{result.message}</p>

@@ -2,6 +2,7 @@
 
 import { Button } from "@/app/components/inputs/Button";
 import { Card } from "@/app/components/Card";
+import { CheckIcon, CloseIcon, ArrowRightIcon } from "@/app/components/icons";
 
 interface BranchSuccessCardProps {
   /**
@@ -30,25 +31,11 @@ export function BranchSuccessCard({ branchName, onDismiss, onShowBranch }: Branc
     <Card variant="success">
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2 text-gh-success-fg">
-          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M5 13l4 4L19 7"
-            />
-          </svg>
+          <CheckIcon className="h-5 w-5" />
           <span className="text-sm font-medium">Branch created successfully!</span>
         </div>
         <Button variant="ghost" size="icon" onClick={onDismiss}>
-          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M6 18L18 6M6 6l12 12"
-            />
-          </svg>
+          <CloseIcon className="h-4 w-4" />
         </Button>
       </div>
       <p className="mb-3 text-xs text-gh-text-muted">
@@ -57,14 +44,7 @@ export function BranchSuccessCard({ branchName, onDismiss, onShowBranch }: Branc
         </code>
       </p>
       <Button variant="primary" fullWidth onClick={onShowBranch}>
-        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M13 7l5 5m0 0l-5 5m5-5H6"
-          />
-        </svg>
+        <ArrowRightIcon className="h-4 w-4" />
         Show Stressed Branch
       </Button>
     </Card>

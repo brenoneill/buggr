@@ -1,6 +1,7 @@
 "use client";
 
 import { SelectHTMLAttributes } from "react";
+import { ChevronDownIcon } from "@/app/components/icons";
 
 interface SelectOption {
   /**
@@ -54,9 +55,7 @@ export function Select({ options, label, placeholder, ...props }: SelectProps) {
           ))}
         </select>
         <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
-          <svg className="h-4 w-4 text-gh-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
+          <ChevronDownIcon className="h-4 w-4 text-gh-text-muted" />
         </div>
       </div>
     </div>

@@ -2,6 +2,7 @@ import { auth, signOut } from "@/auth";
 import { fetchUserRepos } from "@/lib/github";
 import { RepoBranchSelector } from "../components/RepoBranchSelector";
 import { Button } from "../components/inputs/Button";
+import { LogoutIcon } from "../components/icons";
 
 /**
  * Dashboard page - main application interface for authenticated users.
@@ -46,19 +47,7 @@ export default async function Dashboard() {
           }}
         >
           <Button type="submit" variant="secondary" size="sm">
-            <svg
-              className="h-4 w-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-              />
-            </svg>
+            <LogoutIcon className="h-4 w-4" />
             Log out
           </Button>
         </form>
