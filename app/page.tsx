@@ -1,4 +1,5 @@
 import { signIn } from "@/auth";
+import { Button } from "./components/inputs/Button";
 
 /**
  * Landing/info page shown to unauthenticated users.
@@ -28,10 +29,7 @@ export default async function Home() {
             await signIn("github", { redirectTo: "/dashboard" });
           }}
         >
-          <button
-            type="submit"
-            className="flex items-center gap-2 rounded-lg border border-[#30363d] bg-[#238636] px-4 py-2 text-sm font-semibold text-white transition-all duration-200 hover:bg-[#2ea043] hover:shadow-lg hover:shadow-[#238636]/25 focus:outline-none focus:ring-2 focus:ring-[#238636] focus:ring-offset-2 focus:ring-offset-[#0d1117]"
-          >
+          <Button type="submit" variant="primary">
             <svg
               className="h-4 w-4"
               fill="currentColor"
@@ -45,7 +43,7 @@ export default async function Home() {
               />
             </svg>
             Log in
-          </button>
+          </Button>
         </form>
       </header>
 
