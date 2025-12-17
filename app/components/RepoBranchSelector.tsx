@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { GitHubRepo, GitHubBranch, GitHubCommit, GitHubCommitDetails, StressMetadata } from "@/lib/github";
 import { fetchStressMetadata } from "@/lib/github";
 import { useNotes } from "@/app/context/NotesContext";
@@ -108,6 +108,15 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken }: RepoBra
    * Whether both start and complete commits exist (score can be calculated).
    */
   const canCheckScore = Boolean(startCommit && completeCommit);
+
+  /**
+   * Automatically show score panel when both start and complete commits are detected.
+   */
+  useEffect(() => {
+    if (canCheckScore) {
+      setShowScorePanel(true);
+    }
+  }, [canCheckScore]);
 
   /**
    * Generates a timestamp string for branch naming (YYYYMMDD-HHMMSS).

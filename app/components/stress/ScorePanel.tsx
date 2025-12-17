@@ -209,7 +209,7 @@ export function ScorePanel({
   const bugCount = stressMetadata?.bugCount || 1;
 
   return (
-    <div className="flex h-full flex-col gap-6 overflow-y-auto">
+    <div className="flex h-full flex-col gap-6 overflow-y-auto pt-10">
       {/* Main Score Card */}
       <div className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${scoreRating.gradient} p-[2px]`}>
         <div className="rounded-[14px] bg-gh-canvas-default p-5">
@@ -217,10 +217,10 @@ export function ScorePanel({
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-2">
               <TrophyIcon className="h-4 w-4 text-amber-400" />
-              <span className="text-xs font-semibold tracking-wide text-gh-text-muted uppercase">stresst</span>
+              <span className="text-xs font-semibold tracking-wide text-white uppercase">stresst</span>
             </div>
             {repoFullName && (
-              <code className="font-mono text-xs text-gh-text-muted">{repoFullName}</code>
+              <code className="font-mono text-xs text-white">{repoFullName}</code>
             )}
           </div>
 
