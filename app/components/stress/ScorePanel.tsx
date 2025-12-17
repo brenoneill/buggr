@@ -1,6 +1,6 @@
 import type { GitHubCommit, StressMetadata } from "@/lib/github";
 import { Button } from "@/app/components/inputs/Button";
-import { TrophyIcon, CloseIcon, LightningIcon } from "@/app/components/icons";
+import { TrophyIcon, CloseIcon } from "@/app/components/icons";
 
 interface ScorePanelProps {
   /** The commit where debugging started (contains "start" in message) */
@@ -13,6 +13,120 @@ interface ScorePanelProps {
   onClose: () => void;
   /** Optional stress test metadata from .stresst.json */
   stressMetadata?: StressMetadata | null;
+}
+
+/** Score rating configuration */
+interface ScoreRating {
+  grade: string;
+  label: string;
+  emoji: string;
+  description: string;
+  gradient: string;
+  textColor: string;
+}
+
+/** Time thresholds in minutes for each difficulty level */
+const TIME_THRESHOLDS = {
+  low: { fast: 5, medium: 15 },
+  medium: { fast: 15, medium: 45 },
+  high: { fast: 30, medium: 90 },
+} as const;
+
+/** Score ratings from best to worst */
+const SCORE_RATINGS: Record<string, ScoreRating> = {
+  legendary: {
+    grade: "S",
+    label: "Bug Slayer",
+    emoji: "⚡",
+    description: "Lightning fast! You crushed it.",
+    gradient: "from-purple-500 via-pink-500 to-orange-500",
+    textColor: "text-purple-300",
+  },
+  outstanding: {
+    grade: "A",
+    label: "Outstanding",
+    emoji: "🌟",
+    description: "Exceptional debugging skills!",
+    gradient: "from-amber-400 to-yellow-500",
+    textColor: "text-amber-300",
+  },
+  great: {
+    grade: "B",
+    label: "Great Job",
+    emoji: "🔥",
+    description: "Solid work, well done!",
+    gradient: "from-green-400 to-emerald-500",
+    textColor: "text-green-300",
+  },
+  good: {
+    grade: "C",
+    label: "Good Work",
+    emoji: "👍",
+    description: "Nice effort, keep improving!",
+    gradient: "from-blue-400 to-cyan-500",
+    textColor: "text-blue-300",
+  },
+  practice: {
+    grade: "D",
+    label: "Keep Practicing",
+    emoji: "💪",
+    description: "You finished! Practice makes perfect.",
+    gradient: "from-slate-400 to-slate-500",
+    textColor: "text-slate-300",
+  },
+};
+
+/**
+ * Calculates a score rating based on difficulty, time taken, and bug count.
+ *
+ * @param difficultyLevel - The stress level (low, medium, high)
+ * @param timeMs - Time taken in milliseconds
+ * @param bugCount - Number of bugs that were introduced (more = harder)
+ * @returns Score rating object
+ */
+function calculateScoreRating(
+  difficultyLevel: "low" | "medium" | "high" | undefined,
+  timeMs: number,
+  bugCount?: number
+): ScoreRating {
+  const timeMinutes = timeMs / (1000 * 60);
+  const difficulty = difficultyLevel || "medium";
+  const thresholds = TIME_THRESHOLDS[difficulty];
+
+  // Difficulty bonus: harder = more impressive (0-2 points)
+  const difficultyBonus = difficulty === "high" ? 2 : difficulty === "medium" ? 1 : 0;
+
+  // Bug count bonus: more bugs = more impressive (0-1.5 points)
+  // 1 bug = 0, 2 bugs = 0.5, 3+ bugs = 1, 4+ bugs = 1.5
+  const bugs = bugCount || 1;
+  const bugBonus = bugs >= 4 ? 1.5 : bugs >= 3 ? 1 : bugs >= 2 ? 0.5 : 0;
+
+  // Adjust time thresholds based on bug count (more bugs = more time allowed)
+  const bugTimeMultiplier = 1 + (bugs - 1) * 0.25; // Each extra bug adds 25% more time allowance
+  const adjustedFast = thresholds.fast * bugTimeMultiplier;
+  const adjustedMedium = thresholds.medium * bugTimeMultiplier;
+
+  // Calculate base score from time (1-4 points)
+  let timeScore: number;
+  if (timeMinutes <= adjustedFast) {
+    timeScore = 4; // Very fast
+  } else if (timeMinutes <= adjustedMedium) {
+    timeScore = 3; // Good time
+  } else if (timeMinutes <= adjustedMedium * 2) {
+    timeScore = 2; // Took a while
+  } else {
+    timeScore = 1; // Slow but finished
+  }
+
+  // Combined score (1-7.5 range)
+  const totalScore = timeScore + difficultyBonus + bugBonus;
+
+  // Map to rating (adjusted thresholds for new range)
+  if (totalScore >= 7) return SCORE_RATINGS.legendary;
+  if (totalScore >= 5.5) return SCORE_RATINGS.outstanding;
+  if (totalScore >= 4.5) return SCORE_RATINGS.great;
+  if (totalScore >= 3) return SCORE_RATINGS.good;
+  return SCORE_RATINGS.practice;
 }
 
 /**
@@ -36,12 +150,12 @@ function formatFullDate(dateString: string): string {
  *
  * @param startCommit - The commit where debugging started
  * @param completeCommit - The commit where debugging completed
- * @returns Formatted time difference string (e.g., "5m 30s")
+ * @returns Object with formatted string and raw milliseconds
  */
 function calculateTimeDifference(
   startCommit: GitHubCommit,
   completeCommit: GitHubCommit
-): string {
+): { formatted: string; ms: number } {
   const startTime = new Date(startCommit.commit.author.date).getTime();
   const completeTime = new Date(completeCommit.commit.author.date).getTime();
   const diffMs = Math.abs(completeTime - startTime);
@@ -50,25 +164,18 @@ function calculateTimeDifference(
   const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
   const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
 
+  let formatted: string;
   if (hours > 0) {
-    return `${hours}h ${minutes}m ${seconds}s`;
+    formatted = `${hours}h ${minutes}m ${seconds}s`;
   } else if (minutes > 0) {
-    return `${minutes}m ${seconds}s`;
+    formatted = `${minutes}m ${seconds}s`;
   } else {
-    return `${seconds}s`;
+    formatted = `${seconds}s`;
   }
+
+  return { formatted, ms: diffMs };
 }
 
-/**
- * Displays a score panel showing debugging performance metrics.
- * Shows the time taken to complete debugging along with a timeline
- * of the start and complete commits.
- *
- * @param startCommit - The commit where debugging started
- * @param completeCommit - The commit where debugging completed
- * @param branchName - The branch name being viewed
- * @param onClose - Callback to close the panel
- */
 /** Maps stress level to display configuration */
 const DIFFICULTY_CONFIG = {
   low: { label: "Easy", color: "text-green-400", bg: "bg-green-500/20" },
@@ -83,113 +190,122 @@ export function ScorePanel({
   onClose,
   stressMetadata,
 }: ScorePanelProps) {
-  const timeDifference = calculateTimeDifference(startCommit, completeCommit);
+  const { formatted: timeDifference, ms: timeMs } = calculateTimeDifference(
+    startCommit,
+    completeCommit
+  );
   const difficulty = stressMetadata?.stressLevel
     ? DIFFICULTY_CONFIG[stressMetadata.stressLevel]
     : null;
   const repoFullName = stressMetadata
     ? `${stressMetadata.owner}/${stressMetadata.repo}`
     : null;
+  const scoreRating = calculateScoreRating(
+    stressMetadata?.stressLevel,
+    timeMs,
+    stressMetadata?.bugCount
+  );
+
+  const bugCount = stressMetadata?.bugCount || 1;
 
   return (
-    <div className="flex h-full flex-col gap-6">
-      {/* Score Header */}
-      <div className="flex items-center gap-3">
-        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-amber-600">
-          <TrophyIcon className="h-6 w-6 text-white" />
-        </div>
-        <div>
-          <h2 className="text-xl font-bold text-white">Your Score</h2>
-          <p className="text-sm text-gh-text-muted">Debugging Performance</p>
-        </div>
-      </div>
+    <div className="flex h-full flex-col gap-6 overflow-y-auto">
+      {/* Main Score Card */}
+      <div className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${scoreRating.gradient} p-[2px]`}>
+        <div className="rounded-[14px] bg-gh-canvas-default p-5">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-2">
+              <TrophyIcon className="h-4 w-4 text-amber-400" />
+              <span className="text-xs font-semibold tracking-wide text-gh-text-muted uppercase">stresst</span>
+            </div>
+            {repoFullName && (
+              <code className="font-mono text-xs text-gh-text-muted">{repoFullName}</code>
+            )}
+          </div>
 
-      {/* Test Info - Difficulty & Repo */}
-      {stressMetadata && (
-        <div className="flex flex-wrap items-center gap-3">
-          {difficulty && (
-            <div className={`flex items-center gap-2 rounded-full ${difficulty.bg} px-3 py-1.5`}>
-              <LightningIcon className={`h-4 w-4 ${difficulty.color}`} />
-              <span className={`text-sm font-medium ${difficulty.color}`}>
-                {difficulty.label} Difficulty
+          {/* Grade */}
+          <div className="text-center mb-6">
+            <div className={`inline-flex h-24 w-24 items-center justify-center rounded-2xl bg-gradient-to-br ${scoreRating.gradient} mb-3`}>
+              <span className="text-6xl font-black text-white drop-shadow-lg">
+                {scoreRating.grade}
               </span>
             </div>
-          )}
-          {repoFullName && (
-            <div className="flex items-center gap-2 rounded-full bg-gh-canvas-subtle px-3 py-1.5">
-              <span className="text-sm text-gh-text-muted">Repo:</span>
-              <code className="font-mono text-sm text-gh-accent">{repoFullName}</code>
+            <div className="flex items-center justify-center gap-2 mb-1">
+              <span className="text-2xl">{scoreRating.emoji}</span>
+              <h2 className={`text-xl font-bold ${scoreRating.textColor}`}>
+                {scoreRating.label}
+              </h2>
             </div>
-          )}
-        </div>
-      )}
+            <p className="text-sm text-gh-text-muted">
+              {scoreRating.description}
+            </p>
+          </div>
 
-      {/* Time Card */}
-      <div className="rounded-xl border border-gh-border bg-gradient-to-br from-gh-canvas-subtle to-gh-canvas-default p-6">
-        <div className="text-center">
-          <p className="text-sm font-medium text-gh-text-muted mb-2">
-            Time to Complete
-          </p>
-          <p className="text-4xl font-bold text-gh-success-fg">{timeDifference}</p>
+          {/* Stats Grid */}
+          <div className="grid grid-cols-3 gap-3">
+            <div className="rounded-lg bg-gh-canvas-subtle p-3 text-center">
+              <p className="text-2xl font-bold text-white">{timeDifference}</p>
+              <p className="text-xs text-gh-text-muted mt-1">Time</p>
+            </div>
+            <div className="rounded-lg bg-gh-canvas-subtle p-3 text-center">
+              <p className="text-2xl font-bold text-white">{bugCount}</p>
+              <p className="text-xs text-gh-text-muted mt-1">{bugCount === 1 ? "Bug" : "Bugs"}</p>
+            </div>
+            <div className="rounded-lg bg-gh-canvas-subtle p-3 text-center">
+              <p className={`text-2xl font-bold ${difficulty?.color || "text-white"}`}>
+                {difficulty?.label || "—"}
+              </p>
+              <p className="text-xs text-gh-text-muted mt-1">Level</p>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Timeline */}
-      <div className="flex flex-col gap-4">
-        <h3 className="text-sm font-medium text-gh-text-muted">Timeline</h3>
-
-        {/* Start Commit */}
-        <div className="flex gap-4">
-          <div className="flex flex-col items-center">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-500/20 text-blue-400">
-              <span className="text-lg">🚀</span>
+      {/* Timeline - Compact */}
+      <div className="space-y-3">
+        <h3 className="text-xs font-semibold tracking-wide text-gh-text-muted uppercase">Timeline</h3>
+        
+        <div className="space-y-2">
+          {/* Start */}
+          <div className="flex items-center gap-3 rounded-lg border border-gh-border bg-gh-canvas-subtle p-3">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-500/20">
+              <span className="text-sm">🚀</span>
             </div>
-            <div className="flex-1 w-0.5 bg-gh-border my-2" />
-          </div>
-          <div className="flex-1 pb-4">
-            <div className="rounded-lg border border-gh-border bg-gh-canvas-subtle p-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-white">
-                  Started Debugging
-                </span>
-                <code className="rounded bg-gh-canvas-default px-2 py-0.5 font-mono text-xs text-gh-accent">
-                  {startCommit.sha.substring(0, 7)}
-                </code>
-              </div>
-              <p className="text-sm text-gh-text-muted mb-1">
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium text-white truncate">
                 {startCommit.commit.message.split("\n")[0]}
               </p>
               <p className="text-xs text-gh-text-muted">
                 {formatFullDate(startCommit.commit.author.date)}
               </p>
             </div>
+            <code className="shrink-0 rounded bg-gh-canvas-default px-2 py-0.5 font-mono text-xs text-gh-accent">
+              {startCommit.sha.substring(0, 7)}
+            </code>
           </div>
-        </div>
 
-        {/* Complete Commit */}
-        <div className="flex gap-4">
-          <div className="flex flex-col items-center">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-500/20 text-green-400">
-              <span className="text-lg">✅</span>
-            </div>
+          {/* Connector */}
+          <div className="flex justify-center">
+            <div className="h-4 w-0.5 bg-gh-border" />
           </div>
-          <div className="flex-1">
-            <div className="rounded-lg border border-gh-border bg-gh-canvas-subtle p-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-white">
-                  Completed Fix
-                </span>
-                <code className="rounded bg-gh-canvas-default px-2 py-0.5 font-mono text-xs text-gh-accent">
-                  {completeCommit.sha.substring(0, 7)}
-                </code>
-              </div>
-              <p className="text-sm text-gh-text-muted mb-1">
+
+          {/* Complete */}
+          <div className="flex items-center gap-3 rounded-lg border border-gh-border bg-gh-canvas-subtle p-3">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-green-500/20">
+              <span className="text-sm">✅</span>
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium text-white truncate">
                 {completeCommit.commit.message.split("\n")[0]}
               </p>
               <p className="text-xs text-gh-text-muted">
                 {formatFullDate(completeCommit.commit.author.date)}
               </p>
             </div>
+            <code className="shrink-0 rounded bg-gh-canvas-default px-2 py-0.5 font-mono text-xs text-gh-accent">
+              {completeCommit.sha.substring(0, 7)}
+            </code>
           </div>
         </div>
       </div>
@@ -201,7 +317,7 @@ export function ScorePanel({
             <CloseIcon className="h-4 w-4" />
             Close
           </Button>
-          <code className="font-mono text-sm text-gh-accent">{branchName}</code>
+          <code className="font-mono text-xs text-gh-text-muted">{branchName}</code>
         </div>
       </div>
     </div>
