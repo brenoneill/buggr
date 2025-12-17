@@ -13,7 +13,6 @@ import { EmptyState, EmptyStateIcons } from "@/app/components/EmptyState";
 import { CommitCard } from "@/app/components/commits/CommitCard";
 import { FileChangeList } from "@/app/components/commits/FileChangeList";
 import { CreateBranchForm } from "@/app/components/stress/CreateBranchForm";
-import { StressResultCard } from "@/app/components/stress/StressResultCard";
 import { BranchSuccessCard } from "@/app/components/stress/BranchSuccessCard";
 import { ScorePanel } from "@/app/components/stress/ScorePanel";
 import { PublicReposList } from "@/app/components/PublicReposList";
@@ -51,7 +50,7 @@ const LOADING_STEPS = [
  * @param accessToken - GitHub OAuth access token for fetching data
  */
 export function RepoBranchSelector({ repos: initialRepos, accessToken }: RepoBranchSelectorProps) {
-  const { addNote } = useNotes();
+  const { addNote, addBranchChange } = useNotes();
   const { params: urlParams, isInitialized: urlInitialized, updateParams: updateUrlParams, clearParams: clearUrlParams } = useDashboardUrl();
 
   const [repos, setRepos] = useState<GitHubRepo[]>(initialRepos);
@@ -80,13 +79,6 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken }: RepoBra
   const [copiedBranchLink, setCopiedBranchLink] = useState(false);
   const [deletingAllBranches, setDeletingAllBranches] = useState(false);
   const [showDeleteAllConfirm, setShowDeleteAllConfirm] = useState(false);
-
-  // Stress result state
-  const [stressResult, setStressResult] = useState<{
-    message: string;
-    results: { file: string; success: boolean; changes?: string[] }[];
-    symptoms?: string[];
-  } | null>(null);
 
   // Score panel state
   const [showScorePanel, setShowScorePanel] = useState(false);
@@ -338,7 +330,6 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken }: RepoBra
     setLoadingStep(0);
     setError(null);
     setBranchSuccess(null);
-    setStressResult(null);
 
     try {
       // Step 1: Create the branch
@@ -392,8 +383,17 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken }: RepoBra
         setError(`Branch created, but stress failed: ${stressData.error || "Unknown error"}`);
       } else {
         setBranchSuccess(fullBranchName);
-        setStressResult(stressData);
 
+        // Add branch change to notifications (viewable in Branch Changes tab)
+        addBranchChange({
+          branchName: fullBranchName,
+          repoName: selectedRepo.name,
+          repoOwner: selectedRepo.owner.login,
+          message: stressData.message,
+          files: stressData.results,
+        });
+
+        // Add bug report if symptoms were generated
         if (stressData.symptoms && stressData.symptoms.length > 0) {
           addNote({
             title: "🐛 Bug Report Received",
@@ -650,7 +650,6 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken }: RepoBra
                 setBranches([]);
                 setCommits([]);
                 setBranchSuccess(null);
-                setStressResult(null);
                 setShowCreateBranch(false);
                 setShowScorePanel(false);
                 clearUrlParams();
@@ -928,15 +927,6 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken }: RepoBra
                 </Button>
               )}
             </div>
-
-            {/* Stress Result */}
-            {stressResult && selectedCommit && (
-              <StressResultCard
-                result={stressResult}
-                authorName={selectedCommit.author?.login ?? selectedCommit.commit.author.name}
-                onDismiss={() => setStressResult(null)}
-              />
-            )}
 
             {/* Create Branch Form */}
             {showCreateBranch && selectedBranch && (
