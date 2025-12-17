@@ -78,20 +78,14 @@ export function ScorePanel({
   return (
     <div className="flex h-full flex-col gap-6">
       {/* Score Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-amber-600">
-            <TrophyIcon className="h-6 w-6 text-white" />
-          </div>
-          <div>
-            <h2 className="text-xl font-bold text-white">Your Score</h2>
-            <p className="text-sm text-gh-text-muted">Debugging Performance</p>
-          </div>
+      <div className="flex items-center gap-3">
+        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-amber-600">
+          <TrophyIcon className="h-6 w-6 text-white" />
         </div>
-        <Button variant="ghost" size="sm" onClick={onClose}>
-          <CloseIcon className="h-4 w-4" />
-          Close
-        </Button>
+        <div>
+          <h2 className="text-xl font-bold text-white">Your Score</h2>
+          <p className="text-sm text-gh-text-muted">Debugging Performance</p>
+        </div>
       </div>
 
       {/* Time Card */}
@@ -164,11 +158,14 @@ export function ScorePanel({
         </div>
       </div>
 
-      {/* Branch Info */}
+      {/* Footer */}
       <div className="mt-auto pt-4 border-t border-gh-border">
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-gh-text-muted">Branch</span>
-          <code className="font-mono text-gh-accent">{branchName}</code>
+        <div className="flex items-center justify-between">
+          <Button variant="ghost" size="sm" onClick={onClose}>
+            <CloseIcon className="h-4 w-4" />
+            Close
+          </Button>
+          <code className="font-mono text-sm text-gh-accent">{branchName}</code>
         </div>
       </div>
     </div>
