@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { useSearchParams, useRouter, usePathname } from "next/navigation";
+import { useState, useEffect } from "react";
 import type { GitHubRepo, GitHubBranch, GitHubCommit, GitHubCommitDetails, StressMetadata } from "@/lib/github";
 import { fetchStressMetadata } from "@/lib/github";
+import { useDashboardUrl } from "@/app/hooks/useDashboardUrl";
 import { useNotes } from "@/app/context/NotesContext";
 import { NotesPanel } from "@/app/components/NotesPanel";
 import { Select } from "@/app/components/inputs/Select";
@@ -52,9 +52,7 @@ const LOADING_STEPS = [
  */
 export function RepoBranchSelector({ repos: initialRepos, accessToken }: RepoBranchSelectorProps) {
   const { addNote } = useNotes();
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const pathname = usePathname();
+  const { params: urlParams, isInitialized: urlInitialized, updateParams: updateUrlParams, clearParams: clearUrlParams } = useDashboardUrl();
 
   const [repos, setRepos] = useState<GitHubRepo[]>(initialRepos);
   const [selectedRepo, setSelectedRepo] = useState<GitHubRepo | null>(null);
@@ -67,7 +65,6 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken }: RepoBra
   const [loadingCommits, setLoadingCommits] = useState(false);
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [urlInitialized, setUrlInitialized] = useState(false);
 
   // Create branch state
   const [showCreateBranch, setShowCreateBranch] = useState(false);
@@ -95,36 +92,6 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken }: RepoBra
   const [showScorePanel, setShowScorePanel] = useState(false);
   const [stressMetadata, setStressMetadata] = useState<StressMetadata | null>(null);
   const [loadingMetadata, setLoadingMetadata] = useState(false);
-
-  /**
-   * Updates URL parameters without triggering a page reload.
-   */
-  const updateUrlParams = useCallback(
-    (params: { repo?: string; branch?: string; commit?: string; score?: boolean }) => {
-      const newParams = new URLSearchParams(searchParams.toString());
-
-      if (params.repo !== undefined) {
-        if (params.repo) newParams.set("repo", params.repo);
-        else newParams.delete("repo");
-      }
-      if (params.branch !== undefined) {
-        if (params.branch) newParams.set("branch", params.branch);
-        else newParams.delete("branch");
-      }
-      if (params.commit !== undefined) {
-        if (params.commit) newParams.set("commit", params.commit);
-        else newParams.delete("commit");
-      }
-      if (params.score !== undefined) {
-        if (params.score) newParams.set("score", "true");
-        else newParams.delete("score");
-      }
-
-      const newUrl = newParams.toString() ? `${pathname}?${newParams.toString()}` : pathname;
-      router.replace(newUrl, { scroll: false });
-    },
-    [searchParams, pathname, router]
-  );
 
   /**
    * Finds a commit with "start" in the message (case-insensitive).
@@ -158,56 +125,45 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken }: RepoBra
    * Initialize state from URL parameters on mount.
    */
   useEffect(() => {
-    if (urlInitialized) return;
+    if (!urlInitialized) return;
 
-    const repoParam = searchParams.get("repo");
-    const branchParam = searchParams.get("branch");
-    const commitParam = searchParams.get("commit");
-    const scoreParam = searchParams.get("score");
+    // Only run once when URL is first initialized
+    if (selectedRepo) return;
 
-    if (repoParam) {
+    if (urlParams.repo) {
       // Find matching repo
-      const repo = initialRepos.find((r) => r.full_name === repoParam);
+      const repo = initialRepos.find((r) => r.full_name === urlParams.repo);
       if (repo) {
         // Trigger repo selection which will fetch branches
         handleRepoSelect(repo).then(() => {
           // After repo is selected, select branch if provided
-          if (branchParam) {
-            handleBranchSelect(branchParam).then(() => {
-              // After branch is selected and commits are loaded, select commit if provided
-              if (commitParam) {
-                // Commit selection happens via the commits state, so we need to wait
-                // The commit will be selected in a separate effect
-              }
-            });
+          if (urlParams.branch) {
+            handleBranchSelect(urlParams.branch);
           }
         });
       }
     }
 
     // Show score panel if URL param is set
-    if (scoreParam === "true") {
+    if (urlParams.score) {
       setShowScorePanel(true);
     }
-
-    setUrlInitialized(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [urlInitialized]);
 
   /**
    * Select commit from URL param after commits are loaded.
    */
   useEffect(() => {
-    if (!urlInitialized) return;
-    const commitParam = searchParams.get("commit");
-    if (commitParam && commits.length > 0 && !selectedCommit) {
-      const commit = commits.find((c) => c.sha === commitParam || c.sha.startsWith(commitParam));
+    if (!urlInitialized || !urlParams.commit) return;
+    if (commits.length > 0 && !selectedCommit) {
+      const commit = commits.find((c) => c.sha === urlParams.commit || c.sha.startsWith(urlParams.commit!));
       if (commit) {
         handleCommitSelect(commit);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [commits, urlInitialized]);
+  }, [commits, urlInitialized, urlParams.commit]);
 
   /**
    * Update URL when selections change.
@@ -215,10 +171,10 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken }: RepoBra
   useEffect(() => {
     if (!urlInitialized) return;
     updateUrlParams({
-      repo: selectedRepo?.full_name || undefined,
-      branch: selectedBranch || undefined,
-      commit: selectedCommit?.sha.substring(0, 7) || undefined,
-      score: showScorePanel || undefined,
+      repo: selectedRepo?.full_name || null,
+      branch: selectedBranch,
+      commit: selectedCommit?.sha.substring(0, 7) || null,
+      score: showScorePanel,
     });
   }, [selectedRepo, selectedBranch, selectedCommit, showScorePanel, urlInitialized, updateUrlParams]);
 
@@ -697,6 +653,7 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken }: RepoBra
                 setStressResult(null);
                 setShowCreateBranch(false);
                 setShowScorePanel(false);
+                clearUrlParams();
               }}
               title="Clear selection"
             >
