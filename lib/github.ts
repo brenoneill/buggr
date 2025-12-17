@@ -313,6 +313,32 @@ export interface GitHubFileContent {
 }
 
 /**
+ * Metadata stored in .stresst.json for tracking stress test performance.
+ */
+export interface StressMetadata {
+  /** Stress level used: "low", "medium", or "high" */
+  stressLevel: "low" | "medium" | "high";
+  /** Number of bugs introduced */
+  bugCount: number;
+  /** ISO timestamp when the stress test was created */
+  createdAt: string;
+  /** User-facing symptom descriptions */
+  symptoms: string[];
+  /** Files that were stressed */
+  filesStressed: string[];
+  /** Technical descriptions of changes made */
+  changes: string[];
+  /** Original commit SHA that was branched from */
+  originalCommitSha: string;
+  /** Repository owner */
+  owner: string;
+  /** Repository name */
+  repo: string;
+  /** Branch name */
+  branch: string;
+}
+
+/**
  * Fetches the content of a file from a specific branch.
  * 
  * @param accessToken - GitHub OAuth access token
@@ -393,6 +419,82 @@ export async function updateFile(
   }
 
   return response.json();
+}
+
+/** Path where stress metadata is stored in branches */
+export const STRESS_METADATA_PATH = ".stresst.json";
+
+/**
+ * Creates a stress metadata file in a branch.
+ * This file stores information about the stress test for later retrieval (e.g., performance tracking).
+ * 
+ * @param accessToken - GitHub OAuth access token
+ * @param metadata - Stress test metadata to store
+ * @returns Commit result
+ */
+export async function createStressMetadata(
+  accessToken: string,
+  metadata: StressMetadata
+): Promise<{ commit: { sha: string } }> {
+  const { owner, repo, branch } = metadata;
+  const content = JSON.stringify(metadata, null, 2);
+  
+  const response = await fetch(
+    `${GITHUB_API_BASE}/repos/${owner}/${repo}/contents/${STRESS_METADATA_PATH}`,
+    {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Accept: "application/vnd.github.v3+json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        message: "📊 Add stress test metadata",
+        content: Buffer.from(content).toString("base64"),
+        branch,
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.message || `Failed to create stress metadata: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+/**
+ * Fetches stress metadata from a branch.
+ * Returns null if the metadata file doesn't exist (branch wasn't created by stresst).
+ * 
+ * @param accessToken - GitHub OAuth access token
+ * @param owner - Repository owner (username or org)
+ * @param repo - Repository name
+ * @param branch - Branch name
+ * @returns Stress metadata or null if not found
+ */
+export async function fetchStressMetadata(
+  accessToken: string,
+  owner: string,
+  repo: string,
+  branch: string
+): Promise<StressMetadata | null> {
+  try {
+    const fileContent = await fetchFileContent(
+      accessToken,
+      owner,
+      repo,
+      STRESS_METADATA_PATH,
+      branch
+    );
+    
+    const decodedContent = Buffer.from(fileContent.content, "base64").toString("utf-8");
+    return JSON.parse(decodedContent) as StressMetadata;
+  } catch {
+    // File doesn't exist or couldn't be parsed - this branch wasn't created by stresst
+    return null;
+  }
 }
 
 /**

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { fetchFileContent, updateFile } from "@/lib/github";
+import { fetchFileContent, updateFile, createStressMetadata, StressMetadata } from "@/lib/github";
 import { introduceAIStress } from "@/lib/ai-stress";
 
 // Maximum file size in lines to process (keeps token usage reasonable)
@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { owner, repo, branch, files, context, difficulty } = body;
+    const { owner, repo, branch, files, context, difficulty, originalCommitSha } = body;
 
     if (!owner || !repo || !branch || !files || !Array.isArray(files)) {
       return NextResponse.json(
@@ -187,6 +187,32 @@ export async function POST(request: NextRequest) {
 
     // Deduplicate symptoms
     const uniqueSymptoms = [...new Set(allSymptoms)];
+
+    // Create metadata file for performance tracking (only if stress was successful)
+    if (successCount > 0) {
+      const successfulResults = results.filter((r) => r.success);
+      const allChanges = successfulResults.flatMap((r) => r.changes || []);
+      
+      const metadata: StressMetadata = {
+        stressLevel,
+        bugCount: totalBugCount,
+        createdAt: new Date().toISOString(),
+        symptoms: uniqueSymptoms,
+        filesStressed: successfulResults.map((r) => r.file),
+        changes: allChanges,
+        originalCommitSha: originalCommitSha || "",
+        owner,
+        repo,
+        branch,
+      };
+
+      try {
+        await createStressMetadata(session.accessToken, metadata);
+      } catch (metadataError) {
+        // Log but don't fail the request if metadata creation fails
+        console.error("Failed to create stress metadata:", metadataError);
+      }
+    }
 
     return NextResponse.json({
       message: `${successCount} of ${files.length} files have been stressed out`,

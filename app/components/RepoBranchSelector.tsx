@@ -257,6 +257,7 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken }: RepoBra
           files: filesToStress,
           context: stressContext.trim() || undefined,
           difficulty: stressLevel,
+          originalCommitSha: selectedCommit.sha,
         }),
       });
 
