@@ -21,13 +21,13 @@ const STRESS_CONFIGS: Record<StressLevel, StressConfig> = {
     bugCountMin: 2,
     bugCountMax: 3,
     subtlety: "subtle but findable",
-    description: "The bugs should require careful code review to find - off-by-one errors, subtle async issues, edge case failures. A mid-level developer should need to trace through the logic to find them. You MAY optionally add some convoluted or overly-complex code that obscures the bug - realistic 'clever' code that a developer might write.",
+    description: "The bugs should require careful code review to find - off-by-one errors, missing awaits that cause Promise objects to be used as values, edge case failures. A mid-level developer should need to trace through the logic to find them. You MAY optionally add some convoluted or overly-complex code that obscures the bug - realistic 'clever' code that a developer might write. All bugs must be deterministic and reproducible.",
   },
   high: {
     bugCountMin: 2,
     bugCountMax: 3,
     subtlety: "deviously subtle",
-    description: "The bugs should be very hard to find - race conditions, subtle state mutations, edge cases that only fail under specific conditions, cascading errors where one bug masks another. Even senior developers should need debugging tools and careful analysis. You are ENCOURAGED to add bloated, spaghetti code - overly nested logic, unnecessary abstractions, confusing control flow - that makes bugs harder to trace. This should still be 'realistic' code that an over-engineering developer might actually write.",
+    description: "The bugs should be very hard to find but ALWAYS reproducible - subtle state mutations, edge cases with specific inputs, cascading errors where one bug masks another, deeply nested logic errors. Even senior developers should need debugging tools and careful analysis. You are ENCOURAGED to add bloated, spaghetti code - overly nested logic, unnecessary abstractions, confusing control flow - that makes bugs harder to trace. This should still be 'realistic' code that an over-engineering developer might actually write. IMPORTANT: All bugs must be 100% deterministic - no race conditions or timing-dependent issues.",
   },
 };
 
@@ -114,32 +114,39 @@ Your goal is to make changes that:
 7. Do NOT leave any hints in comments about where bugs are located
 8. Can be over-the-top but should still have a thread of "someone could have written this"
 
+CRITICAL - BUGS MUST BE DETERMINISTIC:
+- Every bug MUST reproduce 100% of the time under the same conditions
+- NO race conditions, timing-dependent bugs, or intermittent failures
+- NO bugs that "sometimes" happen or depend on execution speed
+- The bug should fail the SAME way every time the code runs with the same input
+- Users need to be able to reliably reproduce and debug the issue
+
 Random seed for this session: ${randomSeed}
 Number of bugs to introduce: ${bugCount} (stress level: ${stressLevel})
 
 Choose ${bugCount} bugs RANDOMLY from this list (vary your choices each time!):
 
-MODIFICATION BUGS (change existing code):
+MODIFICATION BUGS (change existing code) - ALL MUST BE DETERMINISTIC:
 - Off-by-one errors in loops or array access (e.g., < vs <=, [i] vs [i-1])
 - Incorrect comparison operators (< vs <=, == vs ===, > vs >=)
 - Swapping similar variable names (e.g., user vs users, item vs items, data vs result)
-- Async/await issues (missing await, extra await, race conditions)
+- Missing await that causes Promise object to be used instead of resolved value (NOT timing-dependent)
 - Incorrect null/undefined checks (removing ?, adding unnecessary ?., wrong nullish coalescing)
 - Wrong order of operations or precedence issues
 - String bugs (wrong concatenation, template literal errors, missing interpolation)
 - Boolean logic errors (AND vs OR, De Morgan's law violations, double negations)
 - Type coercion bugs (Number vs parseInt, implicit conversions)
-- Missing or swapped error handling
+- Missing or swapped error handling (try/catch in wrong place, wrong error type)
 - Wrong function arguments or swapped parameter order
 - Regex pattern bugs (missing escapes, wrong quantifiers, greedy vs lazy)
-- Date/time bugs (timezone issues, wrong format, off-by-one month)
-- Floating point comparison bugs
+- Date/time bugs (wrong format, off-by-one month, wrong date parsing)
+- Floating point comparison bugs (=== instead of epsilon comparison)
 - Array method bugs (map vs forEach, find vs filter, wrong callback return)
-- Object property access bugs (dot vs bracket, wrong key names)
-- Scope/closure bugs (var vs let, stale closures)
+- Object property access bugs (dot vs bracket, wrong key names, typos in property names)
 - Math bugs (wrong operator, integer division, modulo errors)
 - Return statement bugs (missing return, wrong value, early return)
 - Initialization bugs (wrong default values, undefined initial state)
+- Wrong array/object destructuring (swapped positions, wrong property names)
 
 UI/RUNTIME CRASH BUGS:
 - Remove null/undefined guards causing crashes (accessing .property on null)
@@ -150,15 +157,15 @@ UI/RUNTIME CRASH BUGS:
 - Missing key props in list rendering (React)
 - Incorrect conditional rendering that crashes on null data
 
-NEW CODE INJECTION BUGS (add troublesome new code):
+NEW CODE INJECTION BUGS (add troublesome new code) - ALL MUST BE DETERMINISTIC:
 - Add a "helper" function that subtly transforms data incorrectly and use it
 - Add a utility that has an off-by-one error or wrong boundary condition
-- Add a wrapper function that swallows errors silently
-- Add a caching/memoization helper that returns stale data
-- Add a validation function that has incorrect logic
-- Add a formatter/transformer that corrupts data in edge cases
-- Add a debounce/throttle wrapper with incorrect timing
-- Add an event handler that doesn't clean up properly
+- Add a wrapper function that swallows errors and returns wrong default value
+- Add a validation function that has incorrect logic (wrong conditions, inverted checks)
+- Add a formatter/transformer that corrupts data (wrong string manipulation, bad parsing)
+- Add a sorting/filtering helper with inverted or wrong comparison logic
+- Add a data mapping function that drops or duplicates items
+- Add a calculation helper with wrong math (off-by-one, wrong operator, bad rounding)
 
 CODE COMPLEXITY BUGS (medium/high stress only - make code harder to follow):
 - Add unnecessary nested ternaries that hide bugs
@@ -204,6 +211,8 @@ Examples of GOOD detailed symptoms:
 
 Do NOT mention specific variable names, function names, or line numbers. Describe from a tester's perspective who can see the UI and behavior but not the code.
 
+IMPORTANT: Symptoms must describe REPRODUCIBLE issues - bugs that happen every single time under the described conditions. Do NOT write symptoms like "sometimes works" or "intermittently fails". The bug should be 100% reproducible.
+
 The modifiedCode must be the COMPLETE file content with your bugs inserted. Do not truncate or summarize.
 You CAN add new functions, helpers, or code - not just modify existing code. If you add a helper function, make sure to actually USE it somewhere in the existing code so the bug manifests.`;
 
@@ -247,15 +256,15 @@ You CAN add new functions, helpers, or code - not just modify existing code. If 
 function generateFallbackSymptoms(changes: string[]): string[] {
   const symptomTemplates = [
     "When loading the main list: Some items display incorrectly or are missing. Expected all items to render properly but some show as blank or 'undefined'.",
-    "After submitting the form: Data appears to save but refreshing shows old values. Expected changes to persist but they revert.",
-    "Clicking action buttons: Nothing happens on first click, sometimes works on second. Expected immediate response to user interaction.",
+    "After submitting the form: Data appears to save but refreshing shows old values. Expected changes to persist but they don't.",
+    "Clicking action buttons: Button click does nothing. Expected immediate response but no action occurs.",
     "When filtering or sorting data: Results don't match the selected criteria. Expected filtered results but seeing unfiltered or wrong items.",
-    "During page load with larger datasets: App becomes unresponsive or crashes. Expected smooth loading but getting errors or white screen.",
+    "During page load with data: App crashes with error. Expected smooth loading but getting white screen or error message.",
     "After performing a calculation: Numbers are slightly off or completely wrong. Expected correct totals but getting incorrect values.",
-    "When navigating between sections: State is lost or shows stale data. Expected fresh data but seeing previous session's values.",
+    "When navigating between sections: Wrong data displayed. Expected current data but seeing incorrect or missing information.",
     "Processing items in a loop: First or last item behaves differently. Expected consistent behavior but edge items are skipped or duplicated.",
     "When conditions are checked: Logic seems inverted - things that should show are hidden and vice versa. Expected conditional display to work correctly.",
-    "Async operations (save/load/fetch): Sometimes works, sometimes doesn't. Expected reliable behavior but getting intermittent failures.",
+    "When saving data: Save completes but data is corrupted or incomplete. Expected all fields to save but some are missing or wrong.",
   ];
   
   // Pick random symptoms based on number of changes
