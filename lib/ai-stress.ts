@@ -124,60 +124,84 @@ CRITICAL - BUGS MUST BE DETERMINISTIC:
 Random seed for this session: ${randomSeed}
 Number of bugs to introduce: ${bugCount} (stress level: ${stressLevel})
 
+CRITICAL: Bugs MUST be HIGH-IMPACT and CLEARLY VISIBLE. The user should immediately notice something is wrong when they use the app. Avoid subtle operator changes that don't affect behavior.
+
 Choose ${bugCount} bugs RANDOMLY from this list (vary your choices each time!):
 
-MODIFICATION BUGS (change existing code) - ALL MUST BE DETERMINISTIC:
-- Off-by-one errors in loops or array access (e.g., < vs <=, [i] vs [i-1])
-- Incorrect comparison operators (< vs <=, == vs ===, > vs >=)
-- Swapping similar variable names (e.g., user vs users, item vs items, data vs result)
-- Missing await that causes Promise object to be used instead of resolved value (NOT timing-dependent)
-- Incorrect null/undefined checks (removing ?, adding unnecessary ?., wrong nullish coalescing)
-- Wrong order of operations or precedence issues
-- String bugs (wrong concatenation, template literal errors, missing interpolation)
-- Boolean logic errors (AND vs OR, De Morgan's law violations, double negations)
-- Type coercion bugs (Number vs parseInt, implicit conversions)
-- Missing or swapped error handling (try/catch in wrong place, wrong error type)
-- Wrong function arguments or swapped parameter order
-- Regex pattern bugs (missing escapes, wrong quantifiers, greedy vs lazy)
-- Date/time bugs (wrong format, off-by-one month, wrong date parsing)
-- Floating point comparison bugs (=== instead of epsilon comparison)
-- Array method bugs (map vs forEach, find vs filter, wrong callback return)
-- Object property access bugs (dot vs bracket, wrong key names, typos in property names)
-- Math bugs (wrong operator, integer division, modulo errors)
-- Return statement bugs (missing return, wrong value, early return)
-- Initialization bugs (wrong default values, undefined initial state)
-- Wrong array/object destructuring (swapped positions, wrong property names)
+=== HIGHEST PRIORITY: DATA VISIBILITY BUGS (pick from these first!) ===
+These bugs cause OBVIOUS, VISIBLE problems that users notice immediately:
 
-UI/RUNTIME CRASH BUGS:
-- Remove null/undefined guards causing crashes (accessing .property on null)
-- Remove optional chaining causing "Cannot read property of undefined"
-- Access array elements without bounds checking
-- Call methods on potentially null objects
-- Render undefined/null values in UI components
-- Missing key props in list rendering (React)
-- Incorrect conditional rendering that crashes on null data
+STRING/TEXT CORRUPTION:
+- Slice off first or last character(s) of displayed text (e.g., name.slice(1) cuts off first letter)
+- Apply substring/slice that cuts off beginning or end of user-visible strings
+- Wrong string formatting that truncates or corrupts displayed data
+- Template literal that's missing a variable or has wrong interpolation order
+- String concatenation in wrong order so output looks jumbled
 
-NEW CODE INJECTION BUGS (add troublesome new code) - ALL MUST BE DETERMINISTIC:
-- Add a "helper" function that subtly transforms data incorrectly and use it
-- Add a utility that has an off-by-one error or wrong boundary condition
-- Add a wrapper function that swallows errors and returns wrong default value
-- Add a validation function that has incorrect logic (wrong conditions, inverted checks)
-- Add a formatter/transformer that corrupts data (wrong string manipulation, bad parsing)
-- Add a sorting/filtering helper with inverted or wrong comparison logic
-- Add a data mapping function that drops or duplicates items
-- Add a calculation helper with wrong math (off-by-one, wrong operator, bad rounding)
+DATA DISAPPEARING:
+- Array slice/filter that excludes the last 1-2 items (items.slice(0, -2) or length-2)
+- Map/filter that skips every other item or specific indices
+- Condition that hides certain items entirely (e.g., hide items where index > someValue)
+- Return empty array or undefined for certain data paths
+- Destructuring that extracts wrong properties, leaving displayed fields undefined
 
-CODE COMPLEXITY BUGS (medium/high stress only - make code harder to follow):
-- Add unnecessary nested ternaries that hide bugs
-- Create overly abstracted wrapper functions with bugs buried inside
-- Add convoluted Promise chains or callback pyramids
-- Introduce unnecessary indirection (function calls function calls function)
-- Add "clever" one-liners that are hard to parse and contain bugs
-- Create complex reduce/map chains with subtle errors
-- Add unnecessary state transformations that obscure data flow
-- Wrap simple logic in overly complex class structures
-- Add confusing variable reassignments that make tracking state difficult
-- Create deeply nested conditionals with subtle logic errors
+ALL ITEMS SHOW SAME VALUE:
+- Set all IDs to the same value (using first item's ID for all items)
+- Use same index variable for all items in a loop (let i = 0 outside loop, never incrementing)
+- Cache a value outside the loop and use it for every iteration
+- Overwrite array with single repeated item
+- Return same object reference for all mapped items
+
+DATA SHOWING AS UNDEFINED/NULL:
+- Access wrong property name (e.g., item.nme instead of item.name)
+- Destructure with wrong property names so values become undefined
+- Return undefined instead of the actual data from a function
+- Delete or overwrite a property before it's used elsewhere
+- Access nested property without the intermediate object existing
+
+PROPERTY DELETION/NULL POINTER:
+- Delete a property from an object, then access it later causing crash
+- Set a required property to null/undefined before it's used
+- Reassign object to {} or null, then access properties on it
+- Clear an array before iterating over it
+- Overwrite function parameter before using it
+
+=== SECONDARY: OTHER IMPACTFUL BUGS ===
+
+CALCULATION/DISPLAY BUGS:
+- Off-by-one that causes visible miscounts (showing "3 items" when there are 4)
+- Wrong array length calculation affecting pagination or "showing X of Y"
+- Price/total calculations that are visibly wrong (off by whole dollars, not cents)
+- Date calculations showing wrong day (yesterday's date as today's)
+- Counter that starts at wrong number or increments incorrectly
+
+RENDERING BUGS:
+- Conditional rendering with inverted logic (show when should hide, hide when should show)
+- Wrong index in list rendering causing duplicate or missing items
+- Map that returns null for some items but not others
+- Filter with always-false or always-true condition
+- Sorting with comparison function that produces wrong order
+
+FORM/INPUT BUGS:
+- Value setter that truncates or corrupts user input
+- Input handler that clears the field or resets to wrong value
+- Form submission that sends wrong field values
+- Validation that rejects all valid inputs or accepts all invalid ones
+
+=== LOWER PRIORITY: SUBTLE BUGS (use sparingly) ===
+Only use these if you've already added high-impact bugs or the code doesn't support visible bugs:
+
+- Missing await (but only if it causes visible [object Promise] or undefined in UI)
+- Wrong comparison operators (but only if it visibly breaks filtering/display)
+- Boolean logic errors (but only if it causes visible wrong behavior)
+- Type coercion bugs (but only if it causes visible NaN or wrong values)
+
+AVOID THESE - THEY RARELY HAVE VISIBLE IMPACT:
+- Simple operator swaps that don't affect output (+ to - in non-displayed calculations)
+- Changes to error handling that only affect edge cases
+- Changes to logging or debugging code
+- Changes to comments or type annotations
+- Micro-optimizations or performance-only bugs
 
 Here is the code to modify:
 
@@ -201,13 +225,17 @@ IMPORTANT about "symptoms": These should be written like DETAILED bug reports fr
 
 Format each symptom as: "[Action/Context]: [What went wrong]. Expected [X] but got [Y]."
 
-Examples of GOOD detailed symptoms:
-- "When adding the 3rd item to cart: Total shows $0.00. Expected it to show the sum of all items ($45.97)."
-- "After clicking 'Save' on the profile form: Changes appear to save but refreshing shows old data. Name field reverts to previous value."
-- "Loading the users list with 50+ entries: App crashes with white screen. Console shows 'Cannot read property of undefined'. Works fine with fewer users."
-- "Filtering products by 'Electronics' category: Shows all products instead of filtered results. The filter dropdown shows 'Electronics' is selected but list isn't filtered."
-- "Submitting a comment with special characters (tried: 'Test & <script>'): Comment posts but displays as blank. Other comments without special chars work fine."
-- "On the dashboard after midnight: Yesterday's stats showing as today's. The date header says 'Dec 22' but data is from Dec 21."
+Examples of GOOD detailed symptoms (HIGHLY VISIBLE bugs):
+- "In the search bar: The first letter of my search is being cut off. I typed 'Apple' but it searches for 'pple'. Every search term loses its first character."
+- "On the product list page: The last 2 items are completely missing. We have 10 products but only 8 show up. Scrolling to the end, items 9 and 10 are nowhere to be found."
+- "In the user cards: Every single card shows the same user ID (#1001). All 50 users display 'ID: 1001' even though they should each have unique IDs."
+- "On the dashboard: All the user names are showing as 'undefined'. The email and avatar load fine but where the name should be it just says 'undefined'."
+- "After loading the orders page: App crashes with white screen. Something about 'Cannot read property of null'. Looks like order data is being deleted before it's displayed."
+- "In the item list: Half the items are completely blank. Items 1, 3, 5, 7 show correctly but items 2, 4, 6, 8 are empty cards with no content."
+- "On the pricing page: All prices show $0.00. We have items ranging from $10-$500 but every single one displays as $0.00."
+- "In the data table: The 'Status' column shows the wrong status for every row. Items marked 'Active' in the database show as 'Inactive' and vice versa."
+- "When viewing comments: Every comment shows the exact same text - the first comment's text is repeated for all 20 comments."
+- "On the counter display: It shows '3 items' but there are clearly 5 items visible on screen. The count is always 2 less than the actual number."
 
 Do NOT mention specific variable names, function names, or line numbers. Describe from a tester's perspective who can see the UI and behavior but not the code.
 
@@ -255,16 +283,16 @@ You CAN add new functions, helpers, or code - not just modify existing code. If 
  */
 function generateFallbackSymptoms(changes: string[]): string[] {
   const symptomTemplates = [
-    "When loading the main list: Some items display incorrectly or are missing. Expected all items to render properly but some show as blank or 'undefined'.",
-    "After submitting the form: Data appears to save but refreshing shows old values. Expected changes to persist but they don't.",
-    "Clicking action buttons: Button click does nothing. Expected immediate response but no action occurs.",
-    "When filtering or sorting data: Results don't match the selected criteria. Expected filtered results but seeing unfiltered or wrong items.",
-    "During page load with data: App crashes with error. Expected smooth loading but getting white screen or error message.",
-    "After performing a calculation: Numbers are slightly off or completely wrong. Expected correct totals but getting incorrect values.",
-    "When navigating between sections: Wrong data displayed. Expected current data but seeing incorrect or missing information.",
-    "Processing items in a loop: First or last item behaves differently. Expected consistent behavior but edge items are skipped or duplicated.",
-    "When conditions are checked: Logic seems inverted - things that should show are hidden and vice versa. Expected conditional display to work correctly.",
-    "When saving data: Save completes but data is corrupted or incomplete. Expected all fields to save but some are missing or wrong.",
+    "On the main list page: The last 2 items are completely missing. We have 10 items but only 8 show up on screen.",
+    "In the search bar: The first letter of every search is being cut off. Typing 'Apple' searches for 'pple' instead.",
+    "On the cards/list view: Every single item shows the same ID number. All 50 items display 'ID: 1001' even though they should be unique.",
+    "In the user profile section: All names are showing as 'undefined'. The other fields load fine but names are blank.",
+    "After loading the page: App crashes with white screen. Console shows 'Cannot read property of null' error.",
+    "On the dashboard: All totals and prices show $0.00. We have items worth hundreds of dollars but everything displays as zero.",
+    "In the item grid: Half the items are completely blank. Every other card (items 2, 4, 6, 8...) shows as empty.",
+    "When viewing the list: Items that should be visible are hidden, and hidden items are showing. The display logic is completely inverted.",
+    "On the counter display: Shows '3 items' but there are clearly 5 items on screen. The count is always 2 less than actual.",
+    "In the text fields: The last few characters are cut off from every label. 'Description' shows as 'Descript', 'Username' shows as 'Userna'.",
   ];
   
   // Pick random symptoms based on number of changes
@@ -320,19 +348,190 @@ function fallbackStress(content: string, filename: string, _context?: string, st
   const config = STRESS_CONFIGS[stressLevel];
   
   // Define all possible mutations for TypeScript/JavaScript
+  // PRIORITY: High-impact, visually noticeable bugs first
   const jsMutations: StressMutation[] = [
+    // === HIGH IMPACT: String/Text Corruption ===
     {
-      name: "invertStrictEquality",
-      canApply: (c) => c.includes(" === "),
-      apply: (c) => c.replace(" === ", " !== "),
-      description: "Inverted a strict equality check (=== → !==)",
+      name: "sliceOffFirstChar",
+      canApply: (c) => /\.\w+\s*[,\)\}]/.test(c) && /name|title|label|text|value|query|search|input/i.test(c),
+      apply: (c) => {
+        // Find a string property and slice off first character
+        const match = c.match(/(\.\w*(name|title|label|text|value|query|search|input)\w*)/i);
+        if (match) {
+          return c.replace(match[1], match[1] + ".slice(1)");
+        }
+        return c;
+      },
+      description: "Added .slice(1) to a text field, cutting off the first character",
     },
     {
-      name: "invertLooseEquality",
-      canApply: (c) => c.includes(" == ") && !c.includes(" === "),
-      apply: (c) => c.replace(" == ", " != "),
-      description: "Inverted an equality check (== → !=)",
+      name: "sliceOffLastChars",
+      canApply: (c) => /\.\w+\s*[,\)\}]/.test(c) && /name|title|label|text|description/i.test(c),
+      apply: (c) => {
+        const match = c.match(/(\.\w*(name|title|label|text|description)\w*)/i);
+        if (match) {
+          return c.replace(match[1], match[1] + ".slice(0, -3)");
+        }
+        return c;
+      },
+      description: "Added .slice(0, -3) to a text field, cutting off the last 3 characters",
     },
+
+    // === HIGH IMPACT: Data Disappearing ===
+    {
+      name: "hideLastItems",
+      canApply: (c) => /\.map\s*\(/.test(c),
+      apply: (c) => c.replace(/\.map\s*\(/, ".slice(0, -2).map("),
+      description: "Added .slice(0, -2) before .map(), hiding the last 2 items",
+    },
+    {
+      name: "filterOutHalfItems",
+      canApply: (c) => /\.map\s*\(/.test(c) && !/\.filter\s*\(/.test(c),
+      apply: (c) => c.replace(/\.map\s*\(/, ".filter((_, i) => i % 2 === 0).map("),
+      description: "Added filter that only shows every other item (even indices)",
+    },
+    {
+      name: "returnEmptyArray",
+      canApply: (c) => /return\s+\w+\.map\s*\(/.test(c),
+      apply: (c) => c.replace(/return\s+(\w+)\.map\s*\(/, "return []; $1.map("),
+      description: "Return empty array before the actual mapped data",
+    },
+
+    // === HIGH IMPACT: All Items Same Value ===
+    {
+      name: "useFirstIdForAll",
+      canApply: (c) => /\.map\s*\(\s*\(\s*(\w+)/.test(c) && /\.id|\.key|\.uuid/i.test(c),
+      apply: (c) => {
+        const itemMatch = c.match(/\.map\s*\(\s*\(\s*(\w+)/);
+        if (itemMatch) {
+          const itemVar = itemMatch[1];
+          // Find the array being mapped
+          const arrayMatch = c.match(/(\w+)\.map\s*\(/);
+          if (arrayMatch) {
+            const arrayName = arrayMatch[1];
+            // Replace item.id with array[0].id
+            return c.replace(new RegExp(`${itemVar}\\.id`, 'g'), `${arrayName}[0].id`);
+          }
+        }
+        return c;
+      },
+      description: "Changed to use first item's ID for all items (all IDs now identical)",
+    },
+
+    // === HIGH IMPACT: Data Showing as Undefined ===
+    {
+      name: "wrongPropertyName",
+      canApply: (c) => /\.(name|title|email|username)\b/.test(c),
+      apply: (c) => {
+        const props = ['name', 'title', 'email', 'username'];
+        for (const prop of props) {
+          if (c.includes(`.${prop}`)) {
+            const typo = prop.slice(0, -1); // Remove last char: name -> nam
+            return c.replace(new RegExp(`\\.${prop}\\b`), `.${typo}`);
+          }
+        }
+        return c;
+      },
+      description: "Typo in property name causes undefined (e.g., .name → .nam)",
+    },
+    {
+      name: "setPropertyToNull",
+      canApply: (c) => /const\s+\w+\s*=\s*\{/.test(c),
+      apply: (c) => {
+        // Find an object and set a visible property to null
+        const match = c.match(/(const\s+\w+\s*=\s*\{[^}]*)(name|title|value|data):\s*[^,}]+/);
+        if (match) {
+          return c.replace(match[0], match[1] + match[2] + ": null");
+        }
+        return c;
+      },
+      description: "Set a key property to null, causing undefined display",
+    },
+
+    // === HIGH IMPACT: Null Pointer / Crash ===
+    {
+      name: "removeOptionalChaining",
+      canApply: (c) => c.includes("?."),
+      apply: (c) => c.replace(/\?\./g, "."),
+      description: "Removed all optional chaining (?. → .) causing null pointer crashes",
+    },
+    {
+      name: "deletePropertyBeforeUse",
+      canApply: (c) => /const\s+(\w+)\s*=\s*\{/.test(c) && /\.name|\.data|\.items/.test(c),
+      apply: (c) => {
+        const objMatch = c.match(/const\s+(\w+)\s*=\s*\{/);
+        if (objMatch) {
+          const objName = objMatch[1];
+          // Add delete statement after the object
+          return c.replace(objMatch[0], objMatch[0]).replace(
+            new RegExp(`(const\\s+${objName}\\s*=\\s*\\{[^}]+\\};?)`),
+            `$1\ndelete ${objName}.data;`
+          );
+        }
+        return c;
+      },
+      description: "Deleted a property from object before it's accessed",
+    },
+
+    // === HIGH IMPACT: Calculation/Count Bugs ===
+    {
+      name: "wrongLengthCount",
+      canApply: (c) => /\.length\b/.test(c) && !/\.length\s*[-+]/.test(c),
+      apply: (c) => c.replace(/\.length\b/, ".length - 2"),
+      description: "Changed .length to .length - 2, showing wrong item count",
+    },
+    {
+      name: "returnZeroPrice",
+      canApply: (c) => /price|total|amount|cost|sum/i.test(c) && /return\s+\w+/.test(c),
+      apply: (c) => {
+        const match = c.match(/return\s+(\w*(price|total|amount|cost|sum)\w*)/i);
+        if (match) {
+          return c.replace(match[0], "return 0");
+        }
+        return c;
+      },
+      description: "Return 0 instead of calculated price/total",
+    },
+
+    // === HIGH IMPACT: Map/forEach swap ===
+    {
+      name: "mapToForEach",
+      canApply: (c) => /\.map\s*\(/.test(c) && /return.*\.map/.test(c),
+      apply: (c) => c.replace(/\.map\s*\(/, ".forEach("),
+      description: "Changed .map() to .forEach() - returns undefined instead of array",
+    },
+
+    // === MEDIUM IMPACT: Conditional/Logic bugs ===
+    {
+      name: "invertConditionalDisplay",
+      canApply: (c) => /\?\s*</.test(c) || /&&\s*</.test(c),
+      apply: (c) => {
+        // Invert conditional rendering
+        if (c.includes("? <")) {
+          return c.replace(/(\w+)\s*\?\s*</, "!$1 ? <");
+        }
+        if (c.includes("&& <")) {
+          return c.replace(/(\w+)\s*&&\s*</, "!$1 && <");
+        }
+        return c;
+      },
+      description: "Inverted conditional rendering - shows when should hide, hides when should show",
+    },
+    {
+      name: "returnUndefinedFromFunction",
+      canApply: (c) => /function\s+\w+|const\s+\w+\s*=\s*\([^)]*\)\s*=>/.test(c),
+      apply: (c) => {
+        // Add early return undefined at start of function
+        const match = c.match(/(function\s+\w+[^{]*\{|const\s+\w+\s*=\s*\([^)]*\)\s*=>\s*\{)/);
+        if (match) {
+          return c.replace(match[0], match[0] + "\n  return undefined;");
+        }
+        return c;
+      },
+      description: "Added early return undefined, function returns nothing",
+    },
+
+    // === LOWER PRIORITY: Operator bugs (only if needed) ===
     {
       name: "offByOneLessThan",
       canApply: (c) => /for\s*\([^;]+;\s*\w+\s*<\s*\w+/.test(c),
@@ -340,28 +539,13 @@ function fallbackStress(content: string, filename: string, _context?: string, st
         const match = c.match(/for\s*\([^;]+;\s*\w+\s*<\s*\w+/);
         return match ? c.replace(match[0], match[0].replace(" < ", " <= ")) : c;
       },
-      description: "Changed loop boundary from < to <= (off-by-one error)",
+      description: "Changed loop boundary from < to <= (off-by-one, may process extra item)",
     },
     {
-      name: "offByOneGreaterThan",
-      canApply: (c) => /for\s*\([^;]+;\s*\w+\s*>\s*\d+/.test(c),
-      apply: (c) => {
-        const match = c.match(/for\s*\([^;]+;\s*\w+\s*>\s*\d+/);
-        return match ? c.replace(match[0], match[0].replace(" > ", " >= ")) : c;
-      },
-      description: "Changed loop boundary from > to >= (off-by-one error)",
-    },
-    {
-      name: "andToOr",
-      canApply: (c) => c.includes(" && "),
-      apply: (c) => c.replace(" && ", " || "),
-      description: "Changed logical AND (&&) to OR (||)",
-    },
-    {
-      name: "orToAnd",
-      canApply: (c) => c.includes(" || "),
-      apply: (c) => c.replace(" || ", " && "),
-      description: "Changed logical OR (||) to AND (&&)",
+      name: "zeroToOne",
+      canApply: (c) => /\[\s*0\s*\]/.test(c),
+      apply: (c) => c.replace(/\[\s*0\s*\]/, "[1]"),
+      description: "Changed array index from [0] to [1], skipping first item",
     },
     {
       name: "removeAwait",
@@ -370,138 +554,35 @@ function fallbackStress(content: string, filename: string, _context?: string, st
         const match = c.match(/await\s+\w+\(/);
         return match ? c.replace(match[0], match[0].replace("await ", "")) : c;
       },
-      description: "Removed 'await' keyword (async operation now unhandled)",
-    },
-    {
-      name: "lengthMinusOne",
-      canApply: (c) => c.includes(".length]"),
-      apply: (c) => c.replace(".length]", ".length - 1]"),
-      description: "Changed array access from .length to .length - 1",
-    },
-    {
-      name: "lengthOutOfBounds",
-      canApply: (c) => c.includes(".length - 1]"),
-      apply: (c) => c.replace(".length - 1]", ".length]"),
-      description: "Changed array access from .length - 1 to .length (out of bounds)",
-    },
-    {
-      name: "trueToFalse",
-      canApply: (c) => /[=:]\s*true[,;\s\n\r})]/.test(c),
-      apply: (c) => c.replace(/([=:]\s*)true([,;\s\n\r})])/, "$1false$2"),
-      description: "Changed a 'true' value to 'false'",
-    },
-    {
-      name: "falseToTrue",
-      canApply: (c) => /[=:]\s*false[,;\s\n\r})]/.test(c),
-      apply: (c) => c.replace(/([=:]\s*)false([,;\s\n\r})])/, "$1true$2"),
-      description: "Changed a 'false' value to 'true'",
-    },
-    {
-      name: "removeOptionalChaining",
-      canApply: (c) => c.includes("?."),
-      apply: (c) => c.replace("?.", "."),
-      description: "Removed optional chaining operator (?. → .)",
-    },
-    {
-      name: "lessThanToGreaterThan",
-      canApply: (c) => / < /.test(c) && !/for\s*\(/.test(c.split(/ < /)[0].split("\n").pop() || ""),
-      apply: (c) => c.replace(/ < /, " > "),
-      description: "Swapped comparison operator (< → >)",
-    },
-    {
-      name: "greaterThanToLessThan",
-      canApply: (c) => / > /.test(c) && !/for\s*\(/.test(c.split(/ > /)[0].split("\n").pop() || ""),
-      apply: (c) => c.replace(/ > /, " < "),
-      description: "Swapped comparison operator (> → <)",
-    },
-    {
-      name: "plusToMinus",
-      canApply: (c) => /\w\s*\+\s*\d+/.test(c),
-      apply: (c) => c.replace(/(\w\s*)\+(\s*\d+)/, "$1-$2"),
-      description: "Changed arithmetic operator (+ → -)",
-    },
-    {
-      name: "minusToPlus",
-      canApply: (c) => /\w\s*-\s*\d+/.test(c) && !/\.length\s*-\s*1/.test(c),
-      apply: (c) => {
-        // Avoid changing .length - 1 patterns
-        const match = c.match(/(\w)\s*-\s*(\d+)/);
-        if (match && !c.substring(0, c.indexOf(match[0])).endsWith(".length")) {
-          return c.replace(/(\w\s*)-(\s*\d+)/, "$1+$2");
-        }
-        return c;
-      },
-      description: "Changed arithmetic operator (- → +)",
-    },
-    {
-      name: "incrementToDecrement",
-      canApply: (c) => /\w+\+\+/.test(c),
-      apply: (c) => c.replace(/(\w+)\+\+/, "$1--"),
-      description: "Changed increment to decrement (++ → --)",
-    },
-    {
-      name: "decrementToIncrement",
-      canApply: (c) => /\w+--/.test(c),
-      apply: (c) => c.replace(/(\w+)--/, "$1++"),
-      description: "Changed decrement to increment (-- → ++)",
-    },
-    {
-      name: "nullToUndefined",
-      canApply: (c) => /[=:]\s*null[,;\s\n\r})]/.test(c),
-      apply: (c) => c.replace(/([=:]\s*)null([,;\s\n\r})])/, "$1undefined$2"),
-      description: "Changed null to undefined",
-    },
-    {
-      name: "zeroToOne",
-      canApply: (c) => /[\[=]\s*0\s*[;\],\)]/.test(c),
-      apply: (c) => c.replace(/([\[=]\s*)0(\s*[;\],\)])/, "$11$2"),
-      description: "Changed index or value from 0 to 1",
-    },
-    {
-      name: "removeNullishCoalescing",
-      canApply: (c) => c.includes(" ?? "),
-      apply: (c) => {
-        const match = c.match(/(\w+)\s*\?\?\s*([^;\n]+)/);
-        if (match) {
-          return c.replace(match[0], match[1]); // Just use the left side
-        }
-        return c;
-      },
-      description: "Removed nullish coalescing operator (a ?? b → a)",
-    },
-    {
-      name: "mapToForEach",
-      canApply: (c) => /\.map\s*\(/.test(c),
-      apply: (c) => c.replace(/\.map\s*\(/, ".forEach("),
-      description: "Changed .map() to .forEach() (loses return value)",
-    },
-    {
-      name: "addNotOperator",
-      canApply: (c) => /if\s*\(\s*\w+/.test(c) && !/if\s*\(\s*!/.test(c),
-      apply: (c) => c.replace(/if\s*\(\s*(\w+)/, "if (!$1"),
-      description: "Added negation operator to condition",
-    },
-    {
-      name: "removeNotOperator",
-      canApply: (c) => /if\s*\(\s*!\w+/.test(c),
-      apply: (c) => c.replace(/if\s*\(\s*!(\w+)/, "if ($1"),
-      description: "Removed negation operator from condition",
+      description: "Removed 'await' keyword - data shows as [object Promise] or undefined",
     },
   ];
 
-  // Generic mutations that work for any language
+  // Generic mutations that work for any language - prioritizing visible impact
   const genericMutations: StressMutation[] = [
+    {
+      name: "genericReturnNull",
+      canApply: (c) => /return\s+\w+/.test(c),
+      apply: (c) => c.replace(/return\s+\w+/, "return null"),
+      description: "Changed return value to null - data shows as null/empty",
+    },
+    {
+      name: "genericReturnEmptyString",
+      canApply: (c) => /return\s+["'`]/.test(c),
+      apply: (c) => c.replace(/return\s+["'`][^"'`]*["'`]/, 'return ""'),
+      description: "Changed return value to empty string - text displays as blank",
+    },
     {
       name: "genericTrueToFalse",
       canApply: (c) => c.includes("true"),
       apply: (c) => c.replace("true", "false"),
-      description: "Changed a 'true' value to 'false'",
+      description: "Changed 'true' to 'false' - affects visibility/display logic",
     },
     {
       name: "genericFalseToTrue",
       canApply: (c) => c.includes("false"),
       apply: (c) => c.replace("false", "true"),
-      description: "Changed a 'false' value to 'true'",
+      description: "Changed 'false' to 'true' - affects visibility/display logic",
     },
   ];
 
