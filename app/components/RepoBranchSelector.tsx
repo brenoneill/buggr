@@ -16,17 +16,7 @@ import { CreateBranchForm } from "@/app/components/stress/CreateBranchForm";
 import { BranchSuccessCard } from "@/app/components/stress/BranchSuccessCard";
 import { ScorePanel } from "@/app/components/stress/ScorePanel";
 import { PublicReposList } from "@/app/components/PublicReposList";
-import {
-  GitHubIcon,
-  CloseIcon,
-  TrashIcon,
-  DocumentIcon,
-  CheckIcon,
-  CopyIcon,
-  LightningIcon,
-  ExternalLinkIcon,
-  TrophyIcon,
-} from "@/app/components/icons";
+import { GitHubIcon, CloseIcon, TrashIcon, DocumentIcon, CheckIcon, CopyIcon, LightningIcon, ExternalLinkIcon, TrophyIcon } from "@/app/components/icons";
 
 interface RepoBranchSelectorProps {
   repos: GitHubRepo[];
@@ -88,16 +78,12 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken }: RepoBra
   /**
    * Finds a commit with "start" in the message (case-insensitive).
    */
-  const startCommit = commits.find((c) =>
-    c.commit.message.toLowerCase().includes("start")
-  );
+  const startCommit = commits.find((c) => c.commit.message.toLowerCase().includes("start") || c.commit.message.toLowerCase().includes("run"));
 
   /**
    * Finds a commit with "complete" in the message (case-insensitive).
    */
-  const completeCommit = commits.find((c) =>
-    c.commit.message.toLowerCase().includes("complete")
-  );
+  const completeCommit = commits.find((c) => c.commit.message.toLowerCase().includes("complete") || c.commit.message.toLowerCase().includes("done") || c.commit.message.toLowerCase().includes("stop"));
 
   /**
    * Whether both start and complete commits exist (score can be calculated).
@@ -198,9 +184,7 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken }: RepoBra
     setShowScorePanel(false);
 
     try {
-      const response = await fetch(
-        `/api/github/branches?owner=${repo.owner.login}&repo=${repo.name}`
-      );
+      const response = await fetch(`/api/github/branches?owner=${repo.owner.login}&repo=${repo.name}`);
 
       if (!response.ok) {
         throw new Error("Failed to fetch branches");
@@ -231,9 +215,7 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken }: RepoBra
     setStressMetadata(null);
 
     try {
-      const response = await fetch(
-        `/api/github/commits?owner=${selectedRepo.owner.login}&repo=${selectedRepo.name}&branch=${encodeURIComponent(branchName)}`
-      );
+      const response = await fetch(`/api/github/commits?owner=${selectedRepo.owner.login}&repo=${selectedRepo.name}&branch=${encodeURIComponent(branchName)}`);
 
       if (!response.ok) {
         throw new Error("Failed to fetch commits");
@@ -251,12 +233,7 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken }: RepoBra
       if (branchName.includes("stresst-")) {
         setLoadingMetadata(true);
         try {
-          const metadata = await fetchStressMetadata(
-            accessToken,
-            selectedRepo.owner.login,
-            selectedRepo.name,
-            branchName
-          );
+          const metadata = await fetchStressMetadata(accessToken, selectedRepo.owner.login, selectedRepo.name, branchName);
           setStressMetadata(metadata);
         } catch {
           // Silently fail - metadata is optional
@@ -284,9 +261,7 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken }: RepoBra
     setError(null);
 
     try {
-      const response = await fetch(
-        `/api/github/commit?owner=${selectedRepo.owner.login}&repo=${selectedRepo.name}&sha=${commit.sha}`
-      );
+      const response = await fetch(`/api/github/commit?owner=${selectedRepo.owner.login}&repo=${selectedRepo.name}&sha=${commit.sha}`);
 
       if (!response.ok) {
         throw new Error("Failed to fetch commit details");
@@ -317,7 +292,7 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken }: RepoBra
     const MAX_FILES_TO_STRESS = 3;
     const filesToStress = commitDetails.files
       .filter((f) => f.status !== "removed")
-      .sort((a, b) => (b.additions + b.deletions) - (a.additions + a.deletions))
+      .sort((a, b) => b.additions + b.deletions - (a.additions + a.deletions))
       .slice(0, MAX_FILES_TO_STRESS)
       .map((f) => f.filename);
 
@@ -411,9 +386,7 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken }: RepoBra
       setShowCreateBranch(false);
 
       // Refresh branches list
-      const branchesResponse = await fetch(
-        `/api/github/branches?owner=${selectedRepo.owner.login}&repo=${selectedRepo.name}`
-      );
+      const branchesResponse = await fetch(`/api/github/branches?owner=${selectedRepo.owner.login}&repo=${selectedRepo.name}`);
       if (branchesResponse.ok) {
         const branchesData = await branchesResponse.json();
         setBranches(branchesData);
@@ -457,9 +430,7 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken }: RepoBra
         throw new Error(data.error || "Failed to delete branch");
       }
 
-      const branchesResponse = await fetch(
-        `/api/github/branches?owner=${selectedRepo.owner.login}&repo=${selectedRepo.name}`
-      );
+      const branchesResponse = await fetch(`/api/github/branches?owner=${selectedRepo.owner.login}&repo=${selectedRepo.name}`);
       if (branchesResponse.ok) {
         const branchesData = await branchesResponse.json();
         setBranches(branchesData);
@@ -537,9 +508,7 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken }: RepoBra
       const data = await response.json();
 
       // Refresh branches list
-      const branchesResponse = await fetch(
-        `/api/github/branches?owner=${selectedRepo.owner.login}&repo=${selectedRepo.name}`
-      );
+      const branchesResponse = await fetch(`/api/github/branches?owner=${selectedRepo.owner.login}&repo=${selectedRepo.name}`);
       if (branchesResponse.ok) {
         const branchesData = await branchesResponse.json();
         setBranches(branchesData);
@@ -573,7 +542,7 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken }: RepoBra
   async function handleForkSuccess(forkedRepo: GitHubRepo) {
     // Add the forked repo to the beginning of the list
     setRepos((prev) => [forkedRepo, ...prev.filter((r) => r.id !== forkedRepo.id)]);
-    
+
     // Auto-select the forked repo
     handleRepoSelect(forkedRepo);
   }
@@ -654,8 +623,7 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken }: RepoBra
                 setShowScorePanel(false);
                 clearUrlParams();
               }}
-              title="Clear selection"
-            >
+              title="Clear selection">
               <CloseIcon className="h-3.5 w-3.5" />
               Clear selection
             </TextButton>
@@ -664,30 +632,16 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken }: RepoBra
               <>
                 {showDeleteAllConfirm ? (
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-gh-danger-fg">
-                      Delete all {branches.filter((b) => b.name.includes("stresst-")).length} stressed branches?
-                    </span>
-                    <Button
-                      variant="danger"
-                      size="sm"
-                      onClick={handleDeleteAllStressedBranches}
-                      disabled={deletingAllBranches}
-                    >
+                    <span className="text-xs text-gh-danger-fg">Delete all {branches.filter((b) => b.name.includes("stresst-")).length} stressed branches?</span>
+                    <Button variant="danger" size="sm" onClick={handleDeleteAllStressedBranches} disabled={deletingAllBranches}>
                       {deletingAllBranches ? "Deleting..." : "Yes"}
                     </Button>
-                    <TextButton
-                      onClick={() => setShowDeleteAllConfirm(false)}
-                      disabled={deletingAllBranches}
-                    >
+                    <TextButton onClick={() => setShowDeleteAllConfirm(false)} disabled={deletingAllBranches}>
                       No
                     </TextButton>
                   </div>
                 ) : (
-                  <TextButton
-                    variant="danger"
-                    onClick={() => setShowDeleteAllConfirm(true)}
-                    disabled={deletingAllBranches}
-                  >
+                  <TextButton variant="danger" onClick={() => setShowDeleteAllConfirm(true)} disabled={deletingAllBranches}>
                     <TrashIcon className="h-3.5 w-3.5" />
                     Delete all stressed branches
                   </TextButton>
@@ -701,11 +655,7 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken }: RepoBra
         {!selectedBranch && <PublicReposList onForkSuccess={handleForkSuccess} />}
 
         {/* Error Display */}
-        {error && (
-          <div className="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
-            {error}
-          </div>
-        )}
+        {error && <div className="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">{error}</div>}
 
         {/* Commits List */}
         {selectedBranch && (
@@ -720,12 +670,7 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken }: RepoBra
                   {showDeleteConfirm ? (
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-gh-danger-fg">Delete branch?</span>
-                      <Button
-                        variant="danger"
-                        size="sm"
-                        onClick={handleDeleteBranch}
-                        disabled={deletingBranch}
-                      >
+                      <Button variant="danger" size="sm" onClick={handleDeleteBranch} disabled={deletingBranch}>
                         {deletingBranch ? "Deleting..." : "Yes"}
                       </Button>
                       <Button variant="ghost" size="sm" onClick={() => setShowDeleteConfirm(false)}>
@@ -734,12 +679,7 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken }: RepoBra
                     </div>
                   ) : (
                     <>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={handleCopyBranchLink}
-                        title="Copy branch link to share"
-                      >
+                      <Button variant="ghost" size="sm" onClick={handleCopyBranchLink} title="Copy branch link to share">
                         {copiedBranchLink ? (
                           <>
                             <CheckIcon className="h-3.5 w-3.5" />
@@ -755,8 +695,7 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken }: RepoBra
                       <button
                         onClick={() => setShowDeleteConfirm(true)}
                         className="flex items-center gap-1 rounded px-2 py-1 text-xs text-gh-text-muted transition-colors hover:bg-gh-danger/20 hover:text-gh-danger-fg"
-                        title="Delete this branch"
-                      >
+                        title="Delete this branch">
                         <TrashIcon className="h-3.5 w-3.5" />
                         Delete
                       </button>
@@ -775,12 +714,7 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken }: RepoBra
             ) : (
               <div className="flex-1 overflow-y-auto rounded-lg border border-gh-border bg-gh-canvas-subtle">
                 {commits.map((commit) => (
-                  <CommitCard
-                    key={commit.sha}
-                    commit={commit}
-                    isSelected={selectedCommit?.sha === commit.sha}
-                    onClick={() => handleCommitSelect(commit)}
-                  />
+                  <CommitCard key={commit.sha} commit={commit} isSelected={selectedCommit?.sha === commit.sha} onClick={() => handleCommitSelect(commit)} />
                 ))}
               </div>
             )}
@@ -792,13 +726,7 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken }: RepoBra
       <div className="flex h-full w-[60%] flex-col overflow-hidden p-6">
         {/* Score Panel View */}
         {showScorePanel && startCommit && completeCommit ? (
-          <ScorePanel
-            startCommit={startCommit}
-            completeCommit={completeCommit}
-            branchName={selectedBranch || ""}
-            onClose={() => setShowScorePanel(false)}
-            stressMetadata={stressMetadata}
-          />
+          <ScorePanel startCommit={startCommit} completeCommit={completeCommit} branchName={selectedBranch || ""} onClose={() => setShowScorePanel(false)} stressMetadata={stressMetadata} />
         ) : loadingDetails ? (
           <div className="flex flex-1 items-center justify-center">
             <div className="h-8 w-8 animate-spin rounded-full border-2 border-gh-border border-t-gh-success" />
@@ -808,32 +736,20 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken }: RepoBra
             {/* Commit Header */}
             <div className="flex items-start gap-4">
               {selectedCommit.author?.avatar_url ? (
-                <img
-                  src={selectedCommit.author.avatar_url}
-                  alt={selectedCommit.author.login}
-                  className="h-12 w-12 rounded-full"
-                />
+                <img src={selectedCommit.author.avatar_url} alt={selectedCommit.author.login} className="h-12 w-12 rounded-full" />
               ) : (
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gh-border text-lg text-gh-text-muted">
-                  {selectedCommit.commit.author.name.charAt(0).toUpperCase()}
-                </div>
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gh-border text-lg text-gh-text-muted">{selectedCommit.commit.author.name.charAt(0).toUpperCase()}</div>
               )}
               <div className="flex min-w-0 flex-1 flex-col gap-1">
-                <h2 className="text-lg font-semibold text-white">
-                  {selectedCommit.author?.login ?? selectedCommit.commit.author.name}
-                </h2>
-                <p className="text-sm text-gh-text-muted">
-                  {formatFullDate(selectedCommit.commit.author.date)}
-                </p>
+                <h2 className="text-lg font-semibold text-white">{selectedCommit.author?.login ?? selectedCommit.commit.author.name}</h2>
+                <p className="text-sm text-gh-text-muted">{formatFullDate(selectedCommit.commit.author.date)}</p>
               </div>
             </div>
 
             {/* Commit Message */}
             <div className="flex flex-col gap-2">
               <div className="flex items-center gap-3">
-                <code className="rounded-md bg-gh-canvas-subtle px-2 py-1 font-mono text-xs text-gh-accent">
-                  {selectedCommit.sha.substring(0, 7)}
-                </code>
+                <code className="rounded-md bg-gh-canvas-subtle px-2 py-1 font-mono text-xs text-gh-accent">{selectedCommit.sha.substring(0, 7)}</code>
                 {commitDetails.stats && (
                   <div className="flex items-center gap-2 text-xs">
                     <span className="text-gh-success-fg">+{commitDetails.stats.additions}</span>
@@ -861,8 +777,7 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken }: RepoBra
                   href={`https://github.com/${selectedRepo.full_name}/commit/${selectedCommit.sha}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 rounded-lg border border-gh-border bg-gh-border-muted px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-gh-border"
-                >
+                  className="inline-flex items-center gap-2 rounded-lg border border-gh-border bg-gh-border-muted px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-gh-border">
                   <GitHubIcon className="h-4 w-4" />
                   View on GitHub
                   <ExternalLinkIcon className="h-3 w-3" />
@@ -870,11 +785,7 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken }: RepoBra
               )}
 
               {selectedBranch && selectedBranch.includes("stresst-") && !showCreateBranch && (
-                <Button
-                  variant="secondary"
-                  onClick={handleCopyBranchLink}
-                  title="Copy branch link to share"
-                >
+                <Button variant="secondary" onClick={handleCopyBranchLink} title="Copy branch link to share">
                   {copiedBranchLink ? (
                     <>
                       <CheckIcon className="h-4 w-4" />
@@ -895,8 +806,7 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken }: RepoBra
                     variant={canCheckScore ? "primary" : "secondary"}
                     onClick={() => setShowScorePanel(!showScorePanel)}
                     disabled={!canCheckScore}
-                    className={!canCheckScore ? "opacity-50 cursor-not-allowed" : ""}
-                  >
+                    className={!canCheckScore ? "opacity-50 cursor-not-allowed" : ""}>
                     <TrophyIcon className="h-4 w-4" />
                     {showScorePanel ? "Hide Score" : "Check Score"}
                   </Button>
@@ -905,8 +815,12 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken }: RepoBra
                     <div className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 w-64 -translate-x-1/2 rounded-lg border border-gh-border bg-[#1c2128] p-3 text-xs opacity-0 shadow-xl transition-opacity group-hover:opacity-100">
                       <p className="font-semibold text-white mb-1.5">How to check your score:</p>
                       <ol className="text-gh-text-muted space-y-1 list-decimal list-inside text-[11px]">
-                        <li>Commit with <code className="text-gh-accent">start</code> when you begin</li>
-                        <li>Commit with <code className="text-gh-accent">complete</code> when done</li>
+                        <li>
+                          Commit with <code className="text-gh-accent">start</code> when you begin
+                        </li>
+                        <li>
+                          Commit with <code className="text-gh-accent">complete</code> when done
+                        </li>
                       </ol>
                       <div className="absolute top-full left-1/2 -translate-x-1/2 border-6 border-transparent border-t-[#1c2128]" />
                     </div>
@@ -920,8 +834,7 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken }: RepoBra
                   onClick={() => {
                     setShowCreateBranch(true);
                     setTimestamp(generateTimestamp());
-                  }}
-                >
+                  }}>
                   <LightningIcon className="h-4 w-4" />
                   Stress out this commit
                 </Button>
@@ -969,11 +882,7 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken }: RepoBra
             <div className="h-8 w-8 animate-spin rounded-full border-2 border-gh-border border-t-gh-success" />
           </div>
         ) : (
-          <EmptyState
-            icon={EmptyStateIcons.commits}
-            title="No commit selected"
-            description="Select a commit from the list to view changed files"
-          />
+          <EmptyState icon={EmptyStateIcons.commits} title="No commit selected" description="Select a commit from the list to view changed files" />
         )}
       </div>
     </div>
