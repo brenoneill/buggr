@@ -14,6 +14,8 @@ export interface BugType {
   examples: string[];
   /** Sample symptom description from a tester's perspective */
   sampleSymptom: string;
+  /** Optional framework this bug applies to (e.g., "react", "nextjs") */
+  framework?: string;
 }
 
 /**
@@ -535,6 +537,165 @@ export const BUG_TYPES: BugType[] = [
       "data |> validate |> transform |> display // one step has the bug",
     ],
     sampleSymptom: "Data corruption happens somewhere in the processing. The raw data is fine but displayed data is wrong.",
+  },
+
+  // === REACT/NEXT.JS FRAMEWORK BUGS ===
+  {
+    id: "react-missing-deps",
+    category: "REACT",
+    framework: "react",
+    name: "Missing useEffect Dependencies",
+    description: "Remove a dependency from useEffect dependency array causing stale closures or missing updates",
+    examples: [
+      "useEffect(() => { setCount(count + 1); }, []); // missing 'count'",
+      "useEffect(() => { fetchData(userId); }, []); // missing 'userId'",
+    ],
+    sampleSymptom: "On the page: The data doesn't update when I change the filter. It shows the old values even after I select different options.",
+  },
+  {
+    id: "react-infinite-loop",
+    category: "REACT",
+    framework: "react",
+    name: "useEffect Infinite Loop",
+    description: "Add a dependency that changes on every render causing infinite re-renders",
+    examples: [
+      "useEffect(() => { setData([...data, item]); }, [data]); // data changes every render",
+      "useEffect(() => { updateState({ ...state }); }, [state]); // object reference changes",
+    ],
+    sampleSymptom: "When the page loads: The browser freezes and becomes unresponsive. The console shows thousands of re-renders happening.",
+  },
+  {
+    id: "react-stale-closure",
+    category: "REACT",
+    framework: "react",
+    name: "Stale Closure in useState/useCallback",
+    description: "Use state value in a callback without including it in dependencies, causing stale closure",
+    examples: [
+      "const handleClick = useCallback(() => { setCount(count + 1); }, []); // stale count",
+      "const memoized = useMemo(() => items.filter(i => i.id === selectedId), []); // stale selectedId",
+    ],
+    sampleSymptom: "When clicking the button: The counter increments but always uses the initial value. It never actually increases past the starting number.",
+  },
+  {
+    id: "react-wrong-hook-order",
+    category: "REACT",
+    framework: "react",
+    name: "Conditional Hook Usage",
+    description: "Call hooks conditionally or in wrong order, violating rules of hooks",
+    examples: [
+      "if (condition) { const [state, setState] = useState(); }",
+      "const value = condition ? useState(0) : useRef(0);",
+    ],
+    sampleSymptom: "When loading the page: App crashes with 'Rendered fewer hooks than expected' error. The page shows a white screen.",
+  },
+  {
+    id: "react-missing-key",
+    category: "REACT",
+    framework: "react",
+    name: "Missing or Duplicate React Keys",
+    description: "Use duplicate keys, missing keys, or index as key causing rendering issues",
+    examples: [
+      "items.map(item => <Item key={item.id} />) // but some items have same id",
+      "items.map((item, i) => <Item key={i} />) // using index when items can reorder",
+      "items.map(item => <Item />) // missing key entirely",
+    ],
+    sampleSymptom: "In the list: When I update an item, the wrong item changes. The form values appear in the wrong rows after editing.",
+  },
+  {
+    id: "react-prop-drilling",
+    category: "REACT",
+    framework: "react",
+    name: "Prop Drilling Bug",
+    description: "Pass props through multiple components and introduce a typo or wrong prop name in the middle",
+    examples: [
+      "// Component A passes 'userId' -> Component B passes 'userid' -> Component C expects 'userId'",
+      "// Component A passes 'data.items' -> Component B passes 'data.item' (singular)",
+    ],
+    sampleSymptom: "In the nested component: The data is undefined even though it's passed from the parent. The props seem to disappear somewhere in the component tree.",
+  },
+  {
+    id: "react-state-mutation",
+    category: "REACT",
+    framework: "react",
+    name: "Direct State Mutation",
+    description: "Mutate state directly instead of creating a new object/array",
+    examples: [
+      "state.items.push(newItem); setState(state); // mutating array",
+      "state.user.name = 'New Name'; setState(state); // mutating object",
+    ],
+    sampleSymptom: "When updating the list: The UI doesn't update even though I added an item. The change only appears after I refresh the page.",
+  },
+  {
+    id: "react-useeffect-cleanup",
+    category: "REACT",
+    framework: "react",
+    name: "Missing useEffect Cleanup",
+    description: "Create subscriptions, timers, or event listeners without cleanup causing memory leaks",
+    examples: [
+      "useEffect(() => { const timer = setInterval(() => {}, 1000); }, []); // no cleanup",
+      "useEffect(() => { window.addEventListener('resize', handler); }, []); // no removeEventListener",
+    ],
+    sampleSymptom: "After navigating away and back: The page becomes slower and slower. Memory usage keeps increasing each time I visit the page.",
+  },
+  {
+    id: "react-conditional-render-bug",
+    category: "REACT",
+    framework: "react",
+    name: "Conditional Rendering with Wrong Operator",
+    description: "Use && when should use || or ternary with swapped branches in JSX",
+    examples: [
+      "{isLoading && error && <Error />} // should be ||",
+      "{user ? <GuestView /> : <UserView />} // swapped branches",
+    ],
+    sampleSymptom: "On the page: When I'm logged in, I see the guest view. When I'm logged out, I see the user view. Everything is backwards.",
+  },
+  {
+    id: "react-ref-current-bug",
+    category: "REACT",
+    framework: "react",
+    name: "useRef Not Initialized or Wrong Usage",
+    description: "Access ref.current before initialization or use ref for values that should be state",
+    examples: [
+      "const inputRef = useRef(); inputRef.current.focus(); // before ref is attached",
+      "const countRef = useRef(0); countRef.current++; // should use useState for UI updates",
+    ],
+    sampleSymptom: "When clicking the button: App crashes with 'Cannot read property of null'. The focus() call fails because the ref isn't set yet.",
+  },
+  {
+    id: "react-context-default-value",
+    category: "REACT",
+    framework: "react",
+    name: "Context Default Value Bug",
+    description: "Use wrong default value in createContext or forget to provide value in Provider",
+    examples: [
+      "const Context = createContext(null); // but component expects object",
+      "<Context.Provider> // missing value prop",
+    ],
+    sampleSymptom: "In the component: The context value is always the default (null/undefined) even though I set it in the Provider. The data never reaches the consumer.",
+  },
+  {
+    id: "react-nextjs-server-client-mismatch",
+    category: "REACT",
+    framework: "nextjs",
+    name: "Server/Client Hydration Mismatch",
+    description: "Use browser-only APIs or random values causing hydration errors in Next.js",
+    examples: [
+      "const id = Math.random(); // different on server vs client",
+      "const width = window.innerWidth; // window not available on server",
+    ],
+    sampleSymptom: "When the page loads: Console shows 'Hydration failed' errors. The page flickers and some content doesn't match between server and client.",
+  },
+  {
+    id: "react-usememo-useless",
+    category: "REACT",
+    framework: "react",
+    name: "Useless useMemo/useCallback",
+    description: "Wrap values in useMemo/useCallback but dependencies change every render, making it useless",
+    examples: [
+      "const memoized = useMemo(() => items, [items]); // but items is new array every render",
+      "const callback = useCallback(() => handleClick(id), [id, handleClick]); // handleClick recreated each render",
+    ],
+    sampleSymptom: "The component: Re-renders constantly even though I wrapped everything in useMemo. Performance is worse than before optimization.",
   },
 ];
 

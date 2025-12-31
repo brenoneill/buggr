@@ -30,31 +30,115 @@ const STRESS_CONFIGS: Record<StressLevel, StressConfig> = {
 
 
 /**
+ * Detects the framework/library used in the code based on content and filename.
+ * 
+ * @param content - File content to analyze
+ * @param filename - Filename to check for framework-specific patterns
+ * @returns Detected framework(s) as an array (e.g., ["react", "nextjs"])
+ */
+function detectFramework(content: string, filename: string): string[] {
+  const frameworks: string[] = [];
+  const lowerContent = content.toLowerCase();
+  const lowerFilename = filename.toLowerCase();
+
+  // React detection
+  if (
+    lowerContent.includes("useState") ||
+    lowerContent.includes("useEffect") ||
+    lowerContent.includes("useCallback") ||
+    lowerContent.includes("useMemo") ||
+    lowerContent.includes("useRef") ||
+    lowerContent.includes("react.") ||
+    lowerContent.includes("from 'react'") ||
+    lowerContent.includes('from "react"') ||
+    lowerFilename.endsWith(".jsx") ||
+    lowerFilename.endsWith(".tsx")
+  ) {
+    frameworks.push("react");
+  }
+
+  // Next.js detection
+  if (
+    lowerContent.includes("next/") ||
+    lowerContent.includes("useRouter") ||
+    lowerContent.includes("usePathname") ||
+    lowerContent.includes("useSearchParams") ||
+    lowerContent.includes("getServerSideProps") ||
+    lowerContent.includes("getStaticProps") ||
+    lowerContent.includes("metadata") ||
+    lowerContent.includes("generateMetadata") ||
+    lowerFilename.includes("page.tsx") ||
+    lowerFilename.includes("layout.tsx") ||
+    lowerFilename.includes("route.ts")
+  ) {
+    frameworks.push("nextjs");
+  }
+
+  return frameworks;
+}
+
+/**
  * Selects random bug types ensuring variety across categories.
  * Uses Fisher-Yates shuffle for true randomness.
  * 
  * Any bug type can be selected regardless of stress level - difficulty comes from
  * the number of bugs and how they're implemented (abstraction layers, helper functions, etc.).
+ * Framework-specific bugs are prioritized when the framework is detected.
  * 
  * @param count - Number of bug types to select
+ * @param content - File content for framework detection
+ * @param filename - Filename for framework detection
  * @param _stressLevel - Stress level (unused, kept for API compatibility)
  * @returns Array of randomly selected bug types
  */
-function selectRandomBugTypes(count: number, _stressLevel: StressLevel): BugType[] {
-  // Use all bug types - difficulty is determined by implementation complexity, not bug type
-  // Shuffle using Fisher-Yates
-  const shuffled = [...BUG_TYPES];
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
-
+function selectRandomBugTypes(count: number, content: string, filename: string, _stressLevel: StressLevel): BugType[] {
+  // Detect framework
+  const detectedFrameworks = detectFramework(content, filename);
+  
+  // Separate framework-specific bugs from general bugs
+  const frameworkBugs = BUG_TYPES.filter(bug => 
+    bug.framework && detectedFrameworks.includes(bug.framework)
+  );
+  const generalBugs = BUG_TYPES.filter(bug => !bug.framework);
+  
+  // Shuffle both lists
+  const shuffleArray = <T>(arr: T[]): T[] => {
+    const shuffled = [...arr];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  };
+  
+  const shuffledFrameworkBugs = shuffleArray(frameworkBugs);
+  const shuffledGeneralBugs = shuffleArray(generalBugs);
+  
   // Select bugs ensuring category variety
   const selected: BugType[] = [];
   const usedCategories = new Set<string>();
+  
+  // If framework detected and we have framework bugs, prioritize including at least one
+  const shouldIncludeFrameworkBug = detectedFrameworks.length > 0 && 
+                                     frameworkBugs.length > 0 && 
+                                     count >= 2;
+  
+  if (shouldIncludeFrameworkBug) {
+    // First: try to pick a framework bug from a new category
+    for (const bug of shuffledFrameworkBugs) {
+      if (!usedCategories.has(bug.category)) {
+        selected.push(bug);
+        usedCategories.add(bug.category);
+        break;
+      }
+    }
+  }
+  
+  // Combine remaining framework bugs with general bugs for selection
+  const allBugs = [...shuffledFrameworkBugs, ...shuffledGeneralBugs];
 
-  // First pass: pick one from each category
-  for (const bug of shuffled) {
+  // First pass: pick one from each category (prioritizing framework bugs if available)
+  for (const bug of allBugs) {
     if (selected.length >= count) break;
     if (!usedCategories.has(bug.category)) {
       selected.push(bug);
@@ -63,7 +147,7 @@ function selectRandomBugTypes(count: number, _stressLevel: StressLevel): BugType
   }
 
   // Second pass: if we still need more, allow category repeats
-  for (const bug of shuffled) {
+  for (const bug of allBugs) {
     if (selected.length >= count) break;
     if (!selected.includes(bug)) {
       selected.push(bug);
@@ -142,8 +226,14 @@ export async function introduceAIStress(
     : config.bugCount;
   
   // RANDOMIZE: Select specific bug types before calling AI
-  const selectedBugs = selectRandomBugTypes(bugCount, stressLevel);
+  const selectedBugs = selectRandomBugTypes(bugCount, content, filename, stressLevel);
   const bugInstructions = formatBugInstructions(selectedBugs);
+  
+  // Detect framework for prompt enhancement
+  const detectedFrameworks = detectFramework(content, filename);
+  const frameworkInstruction = detectedFrameworks.length > 0
+    ? `\n\nFRAMEWORK DETECTED: ${detectedFrameworks.join(", ").toUpperCase()}\nWhen introducing bugs, prioritize framework-specific issues like hooks, component lifecycle, prop drilling, JSX rendering, etc. Make sure framework-specific bugs are realistic and follow framework patterns.`
+    : "";
   
   // Build optional focus area instruction
   const focusInstruction = context 
@@ -160,6 +250,8 @@ YOU MUST INTRODUCE EXACTLY THESE ${bugCount} BUG(S):
 ${bugInstructions}
 
 ${focusInstruction}
+
+${frameworkInstruction}
 
 CRITICAL RULES:
 1. Introduce EXACTLY the bugs listed above - do not substitute or add different bugs
