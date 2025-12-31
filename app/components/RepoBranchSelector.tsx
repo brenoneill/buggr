@@ -293,19 +293,28 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken }: RepoBra
     const base = `stresst-${selectedBranch}-${timestamp}`;
     const fullBranchName = branchSuffix.trim() ? `${base}-${branchSuffix.trim()}` : base;
 
-    // Filter out removed files, sort by most changes, and limit to top 3
-    // This keeps token usage reasonable while targeting the most impactful files
-    const MAX_FILES_TO_STRESS = 3;
-    const filesToStress = commitDetails.files
-      .filter((f) => f.status !== "removed")
-      .sort((a, b) => b.additions + b.deletions - (a.additions + a.deletions))
-      .slice(0, MAX_FILES_TO_STRESS)
-      .map((f) => f.filename);
-
-    if (filesToStress.length === 0) {
+    // Filter out removed files, sort by most changes, and limit based on stress level
+    // Easy (low): 1 file, Medium: 2 files, Hard (high): 3 files
+    const MAX_FILES_TO_STRESS = stressLevel === "low" ? 1 : stressLevel === "medium" ? 2 : 3;
+    const availableFiles = commitDetails.files.filter((f) => f.status !== "removed");
+    
+    if (availableFiles.length === 0) {
       setError("No files available to introduce stress to");
       return;
     }
+
+    // Check if there are enough files for the selected stress level
+    if (availableFiles.length < MAX_FILES_TO_STRESS) {
+      const stressLevelName = stressLevel === "low" ? "easy" : stressLevel === "medium" ? "medium" : "hard";
+      setError(
+        `Only ${availableFiles.length} file${availableFiles.length === 1 ? "" : "s"} available, but ${stressLevelName} mode requires ${MAX_FILES_TO_STRESS}. Proceeding with ${availableFiles.length} file${availableFiles.length === 1 ? "" : "s"}.`
+      );
+    }
+
+    const filesToStress = availableFiles
+      .sort((a, b) => b.additions + b.deletions - (a.additions + a.deletions))
+      .slice(0, MAX_FILES_TO_STRESS)
+      .map((f) => f.filename);
 
     setCreatingBranch(true);
     setLoadingStep(0);
