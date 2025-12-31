@@ -32,6 +32,667 @@ const STRESS_CONFIGS: Record<StressLevel, StressConfig> = {
 };
 
 /**
+ * Represents a type of bug that can be introduced into code.
+ */
+interface BugType {
+  /** Unique identifier for this bug type */
+  id: string;
+  /** Category grouping for the bug */
+  category: string;
+  /** Human-readable name */
+  name: string;
+  /** Description of how to implement this bug */
+  description: string;
+  /** Code examples showing how to implement */
+  examples: string[];
+  /** Sample symptom description from a tester's perspective */
+  sampleSymptom: string;
+  /** Priority level - high impact bugs are more visible to users */
+  priority: "high" | "medium" | "low";
+}
+
+/**
+ * Comprehensive list of bug types that can be introduced into code.
+ * Each bug type has examples and descriptions to guide the AI.
+ */
+const BUG_TYPES: BugType[] = [
+  // === STRING/TEXT CORRUPTION ===
+  {
+    id: "string-reverse",
+    category: "STRING_CORRUPTION",
+    name: "Reverse String Order",
+    description: "Reverse the characters in a string using split('').reverse().join('')",
+    examples: [
+      "user.name.split('').reverse().join('')",
+      "title.split('').reverse().join('')",
+    ],
+    sampleSymptom: "In the user profile: All names appear backwards. 'John Smith' shows as 'htimS nhoJ'.",
+    priority: "high",
+  },
+  {
+    id: "string-uppercase",
+    category: "STRING_CORRUPTION",
+    name: "Force Uppercase/Lowercase",
+    description: "Convert entire strings to uppercase or lowercase when they should preserve case",
+    examples: [
+      "user.name.toUpperCase()",
+      "description.toLowerCase()",
+    ],
+    sampleSymptom: "On the product page: All product names are in ALL CAPS when they should be normal case.",
+    priority: "high",
+  },
+  {
+    id: "string-remove-spaces",
+    category: "STRING_CORRUPTION",
+    name: "Remove All Spaces",
+    description: "Remove all spaces from strings using replace or split/join",
+    examples: [
+      "text.replace(/ /g, '')",
+      "sentence.split(' ').join('')",
+    ],
+    sampleSymptom: "In the description field: All text runs together with no spaces. 'Hello World' shows as 'HelloWorld'.",
+    priority: "high",
+  },
+  {
+    id: "string-slice-start",
+    category: "STRING_CORRUPTION",
+    name: "Slice Off First Characters",
+    description: "Use .slice(1) or .slice(2) to cut off the beginning of strings",
+    examples: [
+      "name.slice(1)",
+      "title.slice(2)",
+    ],
+    sampleSymptom: "In the search bar: The first letter of every search is being cut off. Typing 'Apple' searches for 'pple'.",
+    priority: "high",
+  },
+  {
+    id: "string-slice-end",
+    category: "STRING_CORRUPTION",
+    name: "Slice Off Last Characters",
+    description: "Use .slice(0, -2) or .slice(0, -3) to cut off the end of strings",
+    examples: [
+      "label.slice(0, -2)",
+      "text.slice(0, -3)",
+    ],
+    sampleSymptom: "In the labels: The last few characters are cut off. 'Description' shows as 'Descript'.",
+    priority: "high",
+  },
+  {
+    id: "string-wrong-encoding",
+    category: "STRING_CORRUPTION",
+    name: "Wrong Encoding/Decoding",
+    description: "Apply encodeURIComponent or escape when it shouldn't be applied",
+    examples: [
+      "encodeURIComponent(user.name)",
+      "escape(title)",
+    ],
+    sampleSymptom: "On the display: Text shows weird encoding. 'Hello World' shows as 'Hello%20World'.",
+    priority: "high",
+  },
+  {
+    id: "string-wrong-concat",
+    category: "STRING_CORRUPTION",
+    name: "Wrong String Concatenation",
+    description: "Concatenate strings in wrong order or with wrong separator",
+    examples: [
+      "`${lastName} ${firstName}` instead of `${firstName} ${lastName}`",
+      "parts.join('-') instead of parts.join(' ')",
+    ],
+    sampleSymptom: "On the user card: Names appear as 'Smith John' instead of 'John Smith'.",
+    priority: "high",
+  },
+
+  // === DATA DISAPPEARING ===
+  {
+    id: "array-slice-end",
+    category: "DATA_DISAPPEARING",
+    name: "Slice Off Last Items",
+    description: "Use .slice(0, -2) before .map() to hide the last few items",
+    examples: [
+      "items.slice(0, -2).map(...)",
+      "data.slice(0, -3).forEach(...)",
+    ],
+    sampleSymptom: "On the product list: The last 2 items are completely missing. We have 10 products but only 8 show up.",
+    priority: "high",
+  },
+  {
+    id: "array-filter-half",
+    category: "DATA_DISAPPEARING",
+    name: "Filter Out Half Items",
+    description: "Add a filter that only shows every other item using index modulo",
+    examples: [
+      ".filter((_, i) => i % 2 === 0)",
+      ".filter((item, idx) => idx % 2 !== 0)",
+    ],
+    sampleSymptom: "In the item grid: Half the items are completely blank. Every other card shows as empty.",
+    priority: "high",
+  },
+  {
+    id: "array-return-empty",
+    category: "DATA_DISAPPEARING",
+    name: "Return Empty Array",
+    description: "Return an empty array [] before or instead of the actual data",
+    examples: [
+      "return []; // items.map(...)",
+      "if (true) return [];",
+    ],
+    sampleSymptom: "On the dashboard: The list is completely empty even though we have data in the database.",
+    priority: "high",
+  },
+  {
+    id: "array-wrong-filter",
+    category: "DATA_DISAPPEARING",
+    name: "Always-False Filter Condition",
+    description: "Use a filter condition that's always false, removing all items",
+    examples: [
+      ".filter(item => item.id !== item.id)",
+      ".filter(() => false)",
+    ],
+    sampleSymptom: "On the page: All items have disappeared. The list that should have 50 items shows nothing.",
+    priority: "high",
+  },
+  {
+    id: "destructure-wrong",
+    category: "DATA_DISAPPEARING",
+    name: "Wrong Destructuring",
+    description: "Destructure with wrong property names causing data to be undefined",
+    examples: [
+      "const { nme, emial } = user; // typos",
+      "const { data: items } = response; // wrong property",
+    ],
+    sampleSymptom: "On the form: All the pre-filled values are missing. Fields that should have user data are empty.",
+    priority: "high",
+  },
+
+  // === ALL ITEMS SAME VALUE ===
+  {
+    id: "same-id-all",
+    category: "SAME_VALUE",
+    name: "Use First Item's ID For All",
+    description: "Inside a map, use array[0].id instead of item.id for all items",
+    examples: [
+      "items.map(item => ({ ...item, id: items[0].id }))",
+      "data.map(() => ({ id: data[0].id }))",
+    ],
+    sampleSymptom: "In the user cards: Every single card shows the same ID (#1001). All 50 users display the same ID.",
+    priority: "high",
+  },
+  {
+    id: "same-text-all",
+    category: "SAME_VALUE",
+    name: "Use First Item's Text For All",
+    description: "Use the first item's text/name for all items in a list",
+    examples: [
+      "items.map(() => items[0].name)",
+      "data.map(item => ({ ...item, title: data[0].title }))",
+    ],
+    sampleSymptom: "When viewing comments: Every comment shows the exact same text - the first comment's text is repeated for all.",
+    priority: "high",
+  },
+  {
+    id: "cache-outside-loop",
+    category: "SAME_VALUE",
+    name: "Cache Value Outside Loop",
+    description: "Store a value outside a loop and reuse it for all iterations",
+    examples: [
+      "const name = items[0].name; items.map(item => ({ ...item, name }))",
+      "let value = getFirst(); for(...) { use(value); }",
+    ],
+    sampleSymptom: "On the list: All items show identical values. The first item's data is duplicated across every row.",
+    priority: "high",
+  },
+  {
+    id: "wrong-closure",
+    category: "SAME_VALUE",
+    name: "Closure Captures Wrong Value",
+    description: "Use var instead of let in a loop, or capture wrong variable in closure",
+    examples: [
+      "for(var i = 0; i < items.length; i++) { setTimeout(() => use(i), 100) }",
+      "items.forEach((_, i) => { callbacks.push(() => items[i]) })",
+    ],
+    sampleSymptom: "In the click handlers: Every button performs the same action - they all act like the last button.",
+    priority: "medium",
+  },
+
+  // === DATA SHOWING AS UNDEFINED/NULL ===
+  {
+    id: "property-typo",
+    category: "UNDEFINED_NULL",
+    name: "Property Name Typo",
+    description: "Access property with a typo causing undefined",
+    examples: [
+      "item.nme instead of item.name",
+      "user.emial instead of user.email",
+    ],
+    sampleSymptom: "On the dashboard: All the user names are showing as 'undefined'. The email loads fine but names are blank.",
+    priority: "high",
+  },
+  {
+    id: "return-undefined",
+    category: "UNDEFINED_NULL",
+    name: "Return Undefined Instead of Data",
+    description: "Return undefined or null instead of the actual data",
+    examples: [
+      "return undefined; // return data;",
+      "return null;",
+    ],
+    sampleSymptom: "After loading: The entire content area is blank. Data exists but nothing displays.",
+    priority: "high",
+  },
+  {
+    id: "delete-before-use",
+    category: "UNDEFINED_NULL",
+    name: "Delete Property Before Use",
+    description: "Delete a property from an object before it gets accessed",
+    examples: [
+      "delete user.name; // then later: display(user.name)",
+      "obj.data = undefined; // then use obj.data",
+    ],
+    sampleSymptom: "On the profile page: Key information is missing. The name field shows nothing even though we set it.",
+    priority: "high",
+  },
+  {
+    id: "wrong-optional-chain",
+    category: "UNDEFINED_NULL",
+    name: "Remove Needed Optional Chaining",
+    description: "Remove ?. where it's needed, causing null pointer crashes",
+    examples: [
+      "user.address.street instead of user?.address?.street",
+      "data.items.length instead of data?.items?.length",
+    ],
+    sampleSymptom: "After loading the page: App crashes with white screen. Console shows 'Cannot read property of null' error.",
+    priority: "high",
+  },
+  {
+    id: "wrong-nullish",
+    category: "UNDEFINED_NULL",
+    name: "Wrong Nullish Coalescing",
+    description: "Use ?? when should use || or vice versa, or use wrong fallback",
+    examples: [
+      "value ?? 'default' when value could be empty string",
+      "count || 0 when 0 is valid",
+    ],
+    sampleSymptom: "On the form: Default values aren't appearing correctly. Empty fields should show placeholder text but don't.",
+    priority: "medium",
+  },
+
+  // === CALCULATION/DISPLAY BUGS ===
+  {
+    id: "off-by-one-length",
+    category: "CALCULATION",
+    name: "Wrong Length Calculation",
+    description: "Use length - 2 or length + 1 instead of just length",
+    examples: [
+      "items.length - 2",
+      "count + 1",
+    ],
+    sampleSymptom: "On the counter display: Shows '3 items' but there are clearly 5 items on screen. The count is always 2 less.",
+    priority: "high",
+  },
+  {
+    id: "return-zero",
+    category: "CALCULATION",
+    name: "Return Zero Instead of Calculation",
+    description: "Return 0 instead of the calculated price/total",
+    examples: [
+      "return 0; // return total;",
+      "return 0; // return price * quantity;",
+    ],
+    sampleSymptom: "On the pricing page: All prices show $0.00. Items ranging from $10-$500 all display as zero.",
+    priority: "high",
+  },
+  {
+    id: "wrong-math-op",
+    category: "CALCULATION",
+    name: "Wrong Math Operation",
+    description: "Use wrong math operator (+ instead of *, - instead of +, etc.)",
+    examples: [
+      "price + quantity instead of price * quantity",
+      "total - tax instead of total + tax",
+    ],
+    sampleSymptom: "In the cart: The total price calculation is completely wrong. Buying 5 items at $10 shows $15 instead of $50.",
+    priority: "high",
+  },
+  {
+    id: "wrong-comparison",
+    category: "CALCULATION",
+    name: "Wrong Comparison Operator",
+    description: "Use < when should be > or <= when should be >=",
+    examples: [
+      "if (count < max) instead of if (count > max)",
+      "while (i <= 0) instead of while (i >= 0)",
+    ],
+    sampleSymptom: "On the pagination: Clicking 'Next' goes backwards, and 'Previous' goes forwards. Navigation is completely reversed.",
+    priority: "medium",
+  },
+  {
+    id: "wrong-rounding",
+    category: "CALCULATION",
+    name: "Wrong Rounding Method",
+    description: "Use Math.floor when should use Math.ceil or vice versa",
+    examples: [
+      "Math.floor(total) instead of Math.ceil(total)",
+      "Math.round(value) instead of Math.floor(value)",
+    ],
+    sampleSymptom: "In the quantity display: Values are always rounded incorrectly. 4.9 items shows as 4 instead of 5.",
+    priority: "medium",
+  },
+
+  // === RENDERING/DISPLAY BUGS ===
+  {
+    id: "invert-condition",
+    category: "RENDERING",
+    name: "Invert Conditional Rendering",
+    description: "Add ! to invert a condition, or remove ! where it's needed",
+    examples: [
+      "!isVisible && <Component /> instead of isVisible && <Component />",
+      "condition ? null : <Item /> instead of condition ? <Item /> : null",
+    ],
+    sampleSymptom: "When viewing the list: Items that should be visible are hidden, and hidden items are showing.",
+    priority: "high",
+  },
+  {
+    id: "map-to-foreach",
+    category: "RENDERING",
+    name: "Change map to forEach",
+    description: "Replace .map() with .forEach() causing undefined return",
+    examples: [
+      "items.forEach(item => <Item />) instead of items.map(...)",
+    ],
+    sampleSymptom: "On the list page: The entire list is blank. The container exists but no items render inside.",
+    priority: "high",
+  },
+  {
+    id: "wrong-sort",
+    category: "RENDERING",
+    name: "Wrong Sort Direction",
+    description: "Use a - b when should be b - a, or sort by wrong property",
+    examples: [
+      ".sort((a, b) => a.date - b.date) instead of b.date - a.date",
+      ".sort((a, b) => a.name - b.name) // strings don't subtract",
+    ],
+    sampleSymptom: "On the feed: Newest items appear at the bottom instead of the top. The sort order is completely reversed.",
+    priority: "medium",
+  },
+  {
+    id: "wrong-index",
+    category: "RENDERING",
+    name: "Use Wrong Array Index",
+    description: "Use i+1, i-1, or [1] instead of [0] to access wrong element",
+    examples: [
+      "items[1] instead of items[0]",
+      "array[index + 1] instead of array[index]",
+    ],
+    sampleSymptom: "On the detail view: It's showing the next item's info, not the one I clicked. Everything is offset by 1.",
+    priority: "high",
+  },
+
+  // === ASYNC/PROMISE BUGS ===
+  {
+    id: "missing-await",
+    category: "ASYNC",
+    name: "Missing Await Keyword",
+    description: "Remove await from an async function call",
+    examples: [
+      "const data = fetchData(); // missing await",
+      "const result = processAsync(); // shows [object Promise]",
+    ],
+    sampleSymptom: "On the dashboard: Instead of data, I see '[object Promise]' displayed as text.",
+    priority: "high",
+  },
+  {
+    id: "wrong-promise-method",
+    category: "ASYNC",
+    name: "Promise.all vs Promise.allSettled",
+    description: "Use Promise.all when should use Promise.allSettled or race",
+    examples: [
+      "Promise.all([...]) // fails if any promise rejects",
+      "Promise.race([...]) // only returns first result",
+    ],
+    sampleSymptom: "When loading the page: Sometimes the whole page fails to load if any single request has an issue.",
+    priority: "medium",
+  },
+
+  // === FORM/INPUT BUGS ===
+  {
+    id: "input-truncate",
+    category: "FORM",
+    name: "Truncate Input Value",
+    description: "Apply slice or substring to input values",
+    examples: [
+      "e.target.value.slice(0, 5)",
+      "input.substring(0, input.length - 1)",
+    ],
+    sampleSymptom: "In the text input: I can only type 5 characters. Anything longer gets cut off immediately.",
+    priority: "high",
+  },
+  {
+    id: "input-clear",
+    category: "FORM",
+    name: "Clear Input on Change",
+    description: "Reset the input value instead of updating it",
+    examples: [
+      "setValue('') instead of setValue(e.target.value)",
+      "setInput(null)",
+    ],
+    sampleSymptom: "In the form: Every time I type something, the field clears itself. I can't enter any text.",
+    priority: "high",
+  },
+  {
+    id: "validation-invert",
+    category: "FORM",
+    name: "Invert Validation Logic",
+    description: "Make validation reject valid input and accept invalid input",
+    examples: [
+      "if (email.includes('@')) return 'Invalid'",
+      "if (!isNaN(value)) return 'Must be a number'",
+    ],
+    sampleSymptom: "On the form: Valid emails are rejected and gibberish is accepted. Validation seems backwards.",
+    priority: "high",
+  },
+  {
+    id: "wrong-event",
+    category: "FORM",
+    name: "Wrong Event Handler",
+    description: "Attach handler to wrong event (onClick instead of onChange)",
+    examples: [
+      "onClick={handleChange} instead of onChange={handleChange}",
+      "onSubmit instead of onClick for a button",
+    ],
+    sampleSymptom: "In the dropdown: Selecting an option doesn't do anything. I have to click somewhere else for it to register.",
+    priority: "medium",
+  },
+
+  // === LOGIC BUGS ===
+  {
+    id: "boolean-flip",
+    category: "LOGIC",
+    name: "Flip Boolean Value",
+    description: "Change true to false or false to true",
+    examples: [
+      "isEnabled = false instead of isEnabled = true",
+      "return !valid instead of return valid",
+    ],
+    sampleSymptom: "On the settings page: The toggle says 'ON' but the feature is disabled. The display is opposite of reality.",
+    priority: "medium",
+  },
+  {
+    id: "wrong-ternary",
+    category: "LOGIC",
+    name: "Swap Ternary Branches",
+    description: "Swap the true and false branches of a ternary",
+    examples: [
+      "condition ? errorState : successState // swapped",
+      "isActive ? 'inactive' : 'active'",
+    ],
+    sampleSymptom: "In the status display: Active items show as 'Inactive' and vice versa. The status labels are swapped.",
+    priority: "high",
+  },
+  {
+    id: "wrong-logical-op",
+    category: "LOGIC",
+    name: "Wrong Logical Operator",
+    description: "Use && when should use || or vice versa",
+    examples: [
+      "if (a && b) instead of if (a || b)",
+      "condition1 || condition2 instead of condition1 && condition2",
+    ],
+    sampleSymptom: "On the filter: Items only show when ALL filters match instead of ANY. Finding items is nearly impossible.",
+    priority: "medium",
+  },
+
+  // === TYPE COERCION BUGS ===
+  {
+    id: "string-concat-number",
+    category: "TYPE",
+    name: "String Concatenation Instead of Addition",
+    description: "Concatenate string + number causing '510' instead of 15",
+    examples: [
+      "'5' + 10 // results in '510'",
+      "quantity + price // if quantity is string",
+    ],
+    sampleSymptom: "In the total: The price shows $510.00 instead of $15.00. The math seems way off.",
+    priority: "high",
+  },
+  {
+    id: "wrong-parse",
+    category: "TYPE",
+    name: "Wrong parseInt/parseFloat Usage",
+    description: "Use parseInt without radix or on wrong value",
+    examples: [
+      "parseInt(value) // missing radix, could be octal",
+      "parseFloat('abc') // results in NaN",
+    ],
+    sampleSymptom: "On the quantity input: Entering '08' or '09' gives weird results. The numbers seem to parse incorrectly.",
+    priority: "medium",
+  },
+
+  // === DATA PIPELINE BUGS (for medium/high stress) ===
+  {
+    id: "pipeline-normalizer",
+    category: "PIPELINE",
+    name: "Add Buggy Normalizer Function",
+    description: "Create a 'normalizer' helper function that subtly corrupts data as it passes through",
+    examples: [
+      "function normalizeData(item) { return { ...item, name: item.name.slice(1) }; }",
+      "const normalize = (data) => ({ ...data, id: data.id + 1 });",
+    ],
+    sampleSymptom: "Throughout the app: Data looks slightly wrong everywhere. Names are missing first letter, IDs are off by 1.",
+    priority: "medium",
+  },
+  {
+    id: "pipeline-formatter",
+    category: "PIPELINE",
+    name: "Add Buggy Formatter Function",
+    description: "Create a 'formatter' helper that introduces bugs during data transformation",
+    examples: [
+      "function formatForDisplay(items) { return items.slice(0, -1); }",
+      "const prepareData = (arr) => arr.map(() => arr[0]);",
+    ],
+    sampleSymptom: "On every list: The last item is always missing, or all items show the same data.",
+    priority: "medium",
+  },
+  {
+    id: "pipeline-validator",
+    category: "PIPELINE",
+    name: "Add Buggy Validator Function",
+    description: "Create a 'validator' that incorrectly filters or modifies valid data",
+    examples: [
+      "function validateItems(items) { return items.filter(i => i.id !== i.id); }",
+      "const checkData = (data) => data.isValid ? null : data;",
+    ],
+    sampleSymptom: "After validation: Valid items are being rejected. Good data disappears during processing.",
+    priority: "medium",
+  },
+  {
+    id: "pipeline-chain",
+    category: "PIPELINE",
+    name: "Create Multi-Step Bug Pipeline",
+    description: "Chain multiple transformation functions where one corrupts the data mid-pipeline",
+    examples: [
+      "const process = (items) => items.map(validate).map(normalize).map(format);",
+      "data |> validate |> transform |> display // one step has the bug",
+    ],
+    sampleSymptom: "Data corruption happens somewhere in the processing. The raw data is fine but displayed data is wrong.",
+    priority: "high",
+  },
+];
+
+/**
+ * Selects random bug types ensuring variety across categories.
+ * Uses Fisher-Yates shuffle for true randomness.
+ * 
+ * @param count - Number of bug types to select
+ * @param stressLevel - Stress level affects which priorities are preferred
+ * @returns Array of randomly selected bug types
+ */
+function selectRandomBugTypes(count: number, stressLevel: StressLevel): BugType[] {
+  // Filter by priority based on stress level
+  let priorityFilter: BugType["priority"][];
+  switch (stressLevel) {
+    case "low":
+      priorityFilter = ["high"]; // Only obvious bugs for low stress
+      break;
+    case "medium":
+      priorityFilter = ["high", "medium"];
+      break;
+    case "high":
+      priorityFilter = ["high", "medium", "low"];
+      break;
+  }
+
+  // Get all applicable bugs
+  const applicableBugs = BUG_TYPES.filter(bug => priorityFilter.includes(bug.priority));
+  
+  // Shuffle using Fisher-Yates
+  const shuffled = [...applicableBugs];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+
+  // Select bugs ensuring category variety
+  const selected: BugType[] = [];
+  const usedCategories = new Set<string>();
+
+  // First pass: pick one from each category
+  for (const bug of shuffled) {
+    if (selected.length >= count) break;
+    if (!usedCategories.has(bug.category)) {
+      selected.push(bug);
+      usedCategories.add(bug.category);
+    }
+  }
+
+  // Second pass: if we still need more, allow category repeats
+  for (const bug of shuffled) {
+    if (selected.length >= count) break;
+    if (!selected.includes(bug)) {
+      selected.push(bug);
+    }
+  }
+
+  return selected;
+}
+
+/**
+ * Formats selected bug types into a prompt instruction for the AI.
+ * 
+ * @param bugTypes - The bug types to format
+ * @returns Formatted string describing the bugs to introduce
+ */
+function formatBugInstructions(bugTypes: BugType[]): string {
+  return bugTypes.map((bug, index) => {
+    const examples = bug.examples.map(ex => `    - ${ex}`).join("\n");
+    return `BUG ${index + 1}: ${bug.name} (${bug.category})
+  Description: ${bug.description}
+  Examples:
+${examples}
+  Expected symptom: "${bug.sampleSymptom}"`;
+  }).join("\n\n");
+}
+
+/**
  * Uses AI to introduce subtle but nasty breaking changes to code.
  * The changes should be realistic bugs that require debugging skills to find and fix.
  * 
@@ -64,262 +725,47 @@ export async function introduceAIStress(
 
   const config = STRESS_CONFIGS[stressLevel];
 
-  // Generate a random seed to encourage variety
-  const randomSeed = Math.random().toString(36).substring(2, 15);
-  // Use targetBugCount if provided, otherwise calculate from stress level config
+  // Calculate bug count
   const bugCount = targetBugCount !== undefined 
     ? targetBugCount 
     : Math.floor(Math.random() * (config.bugCountMax - config.bugCountMin + 1)) + config.bugCountMin;
   
+  // RANDOMIZE: Select specific bug types before calling AI
+  const selectedBugs = selectRandomBugTypes(bugCount, stressLevel);
+  const bugInstructions = formatBugInstructions(selectedBugs);
+  
   // Build optional focus area instruction
   const focusInstruction = context 
-    ? `\n\nFOCUS AREA: The user wants to specifically test: "${context}"\nPrioritize bugs related to this focus area when possible, but still be unpredictable.`
+    ? `\n\nFOCUS AREA: The user wants to specifically test: "${context}"\nTry to apply the bugs in areas related to this focus when possible.`
     : "";
   
-  const prompt = `You are a stress engineer tasked with introducing ${config.subtlety} breaking bugs into code.
-  
+  const prompt = `You are a stress engineer introducing specific bugs into code for a debugging training game.
+
 STRESS LEVEL: ${stressLevel.toUpperCase()}
 ${config.description}
 
-CRITICAL VARIETY REQUIREMENT - READ THIS FIRST:
-You MUST use COMPLETELY DIFFERENT bug types for each bug. If you introduce ${bugCount} bugs, they MUST be ${bugCount} DIFFERENT bug categories/patterns. 
+YOU MUST INTRODUCE EXACTLY THESE ${bugCount} BUG(S):
 
-FORBIDDEN: Repeating the same bug pattern (e.g., multiple .slice() bugs, multiple property name typos, etc.)
-REQUIRED: Each bug must use a DIFFERENT mechanism/approach. Mix string bugs, array bugs, object bugs, logic bugs, calculation bugs, etc.
-
-The random seed ${randomSeed} should influence which bug types you choose - use it to ensure variety across different runs.
+${bugInstructions}
 
 ${focusInstruction}
 
-CRITICAL - DO NOT REVEAL BUG LOCATIONS:
-- Do NOT add comments near bugs like "// bug here" or "// TODO: fix this"
-- Do NOT add comments that hint at what was changed
-- Do NOT make the bugs obvious through naming or comments
-- You MAY add realistic developer comments (like normal code would have), but these must NOT reveal the bug location
-- The goal is for the developer to FIND the bugs through debugging, not through reading comments
+CRITICAL RULES:
+1. Introduce EXACTLY the bugs listed above - do not substitute or add different bugs
+2. Each bug description tells you WHAT to do and gives examples - follow them closely
+3. Do NOT add comments that reveal bug locations (no "// bug here" or hints)
+4. Do NOT make syntax errors that IDEs would catch immediately
+5. Bugs must be DETERMINISTIC - same behavior every time with same input
+6. You MAY add helper functions to hide bugs (especially for medium/high stress)
+7. The code must still compile/parse correctly
 
 THE SCENARIO - A careless developer:
-This is for a learning game. Imagine the code was written by a careless, sloppy developer who:
+Imagine the code was written by a sloppy developer who:
 - Never writes tests or double-checks their work
 - Copies and pastes code without understanding it
 - Makes "quick fixes" that break other things
-- Over-engineers simple solutions
-- Leaves half-finished refactors
-- Doesn't handle edge cases
 - Gets confused by their own code
 - Makes typos and doesn't proofread
-
-The bugs can be somewhat over-the-top - this is a game after all! Just keep a small thread of plausibility.
-Think: "a bad developer COULD have done this" rather than "a good developer might accidentally do this"
-
-Your goal is to make changes that:
-1. Will cause the code to fail or behave incorrectly
-2. Could plausibly be written by a careless/incompetent developer
-3. Match the ${stressLevel} stress level described above
-4. Are NOT obvious syntax errors that an IDE would immediately catch
-5. Are MAXIMALLY VARIED - if introducing ${bugCount} bugs, use ${bugCount} COMPLETELY DIFFERENT bug types. NO REPEATS.
-6. You MAY add NEW code (helper functions, utilities) that introduces bugs - not just modify existing code
-7. Do NOT leave any hints in comments about where bugs are located
-8. Can be over-the-top but should still have a thread of "someone could have written this"
-9. ACTIVELY AVOID common patterns like .slice(1), .slice(0, -2), property name typos - use these SPARINGLY and only if no other bug type fits
-
-CRITICAL - BUGS MUST BE DETERMINISTIC:
-- Every bug MUST reproduce 100% of the time under the same conditions
-- NO race conditions, timing-dependent bugs, or intermittent failures
-- NO bugs that "sometimes" happen or depend on execution speed
-- The bug should fail the SAME way every time the code runs with the same input
-- Users need to be able to reliably reproduce and debug the issue
-
-Random seed for this session: ${randomSeed}
-Number of bugs to introduce: ${bugCount} (stress level: ${stressLevel})
-
-FINAL VARIETY CHECKLIST - Before submitting, verify:
-✓ Each of the ${bugCount} bugs uses a DIFFERENT bug category/mechanism
-✓ You have NOT repeated the same pattern (e.g., multiple .slice() bugs)
-✓ You have mixed different types (string bugs, array bugs, object bugs, calculation bugs, etc.)
-✓ If you must use similar patterns, they are in COMPLETELY different contexts with different effects
-
-CRITICAL: Bugs MUST be HIGH-IMPACT and CLEARLY VISIBLE. The user should immediately notice something is wrong when they use the app. Avoid subtle operator changes that don't affect behavior.
-
-Choose ${bugCount} bugs RANDOMLY from this list - YOU MUST PICK ${bugCount} DIFFERENT CATEGORIES. Do NOT pick multiple bugs from the same category unless absolutely necessary:
-
-=== HIGHEST PRIORITY: DATA VISIBILITY BUGS (pick from these first!) ===
-These bugs cause OBVIOUS, VISIBLE problems that users notice immediately:
-
-STRING/TEXT CORRUPTION (use MAX 1 per file):
-- Reverse string order (split('').reverse().join(''))
-- Uppercase/lowercase entire strings when they should be mixed case
-- Replace all spaces with another character or remove all spaces
-- Insert extra characters in the middle of strings
-- Swap adjacent characters in strings
-- Apply wrong encoding/decoding (e.g., encodeURIComponent when shouldn't)
-- Use wrong string method (replace() when should use replaceAll(), or vice versa)
-- String interpolation with wrong variable or missing variable
-- Concatenate strings in wrong order or with wrong separator
-- Truncate strings at wrong position (not just start/end - use middle positions too)
-
-DATA DISAPPEARING (use MAX 1 per file):
-- Array slice that removes items from middle (slice(0, n) + slice(n+2) instead of slice(0, n+2))
-- Filter that removes items based on wrong condition (e.g., filter(item => item.id !== item.id) - always false)
-- Splice that removes wrong number of items or from wrong index
-- Shift/pop/unshift/push used incorrectly (removing when should add, or vice versa)
-- FlatMap that flattens too much or not enough
-- Reduce that returns wrong accumulator or initial value
-- Find/findIndex that uses wrong comparison
-- Some/every that uses inverted logic
-- Condition that hides items based on wrong property comparison
-- Return empty array/undefined/null for certain conditions
-- Destructuring that extracts wrong properties or wrong number of properties
-
-ALL ITEMS SHOW SAME VALUE (use MAX 1 per file):
-- Set all IDs/values to first item's value (using items[0].id for all items)
-- Use loop variable incorrectly (i never increments, or uses wrong variable)
-- Cache value outside loop and reuse for all iterations
-- Map that returns same object/array reference for all items
-- Spread operator used incorrectly (spreading single item instead of array)
-- Object.assign or {...obj} that overwrites with same source
-- Default parameter that's shared across all calls
-- Closure that captures wrong variable value
-
-DATA SHOWING AS UNDEFINED/NULL (use MAX 1 per file):
-- Access property with typo (item.nme instead of item.name) - USE SPARINGLY
-- Destructure with wrong property names or missing properties
-- Return undefined/null instead of actual data
-- Delete property before it's used (delete obj.prop before accessing it)
-- Access nested property without checking intermediate objects exist
-- Optional chaining removed when it's needed (?.) or added when it's not
-- Nullish coalescing used incorrectly (?? when should use ||, or vice versa)
-- Type assertion that's wrong (as string when it's number)
-- Property access on wrong object (this.prop when should be otherObj.prop)
-
-PROPERTY DELETION/NULL POINTER (use MAX 1 per file):
-- Delete property before accessing it
-- Set property to null/undefined before use
-- Reassign object to {} or null before accessing
-- Clear array before iterating (length = 0, or splice(0))
-- Overwrite function parameter before using it
-- Mutate object in place when should create new object
-- Shallow copy when should deep copy (or vice versa)
-- Object.freeze() or Object.seal() used incorrectly
-
-=== SECONDARY: OTHER IMPACTFUL BUGS ===
-
-CALCULATION/DISPLAY BUGS (use MAX 1 per file):
-- Off-by-one errors (length - 1 when should be length, or vice versa)
-- Wrong array length calculation (length + 1, length - 2, etc.)
-- Math operations wrong (multiply when should divide, add when should subtract)
-- Price/total calculations wrong (off by fixed amount, wrong percentage)
-- Date calculations wrong (add/subtract wrong number of days/hours)
-- Counter starts at wrong number or increments/decrements wrong
-- Modulo used incorrectly (% when shouldn't, or wrong modulo)
-- Rounding errors (Math.floor when should Math.ceil, or vice versa)
-- Comparison operators wrong (< when should be >, <= when should be >=)
-- Min/max calculations reversed (Math.min when should Math.max)
-
-RENDERING BUGS (use MAX 1 per file):
-- Conditional rendering inverted (!condition when should be condition)
-- Wrong index in list (using i+1, i-1, or wrong index variable)
-- Map returns null/undefined for wrong items
-- Filter with always-false/always-true condition
-- Sort comparison function wrong (a - b when should be b - a, or wrong property)
-- Reverse array when shouldn't (or don't reverse when should)
-- Unique filter that doesn't work (wrong comparison in Set or filter)
-- Grouping/partitioning logic wrong
-- Pagination logic wrong (page size, offset calculations)
-
-FORM/INPUT BUGS (use MAX 1 per file):
-- Input value truncated or corrupted (slice, substring, etc.)
-- Input handler clears field or resets to wrong value
-- Form submission sends wrong field values or missing fields
-- Validation logic inverted (rejects valid, accepts invalid)
-- Input sanitization too aggressive or missing
-- Event handler attached to wrong element or wrong event type
-- Debounce/throttle applied incorrectly
-- Input type wrong (text when should be number, etc.)
-- Default value wrong or missing
-
-=== LOWER PRIORITY: SUBTLE BUGS (use sparingly, MAX 1 per file) ===
-Only use these if you've already added high-impact bugs or the code doesn't support visible bugs:
-
-ASYNC/PROMISE BUGS:
-- Missing await causing [object Promise] or undefined in UI
-- Promise.all when should use Promise.allSettled (or vice versa)
-- Wrong error handling in try/catch
-- Async function not awaited
-- Race condition in async code (though must still be deterministic)
-
-LOGIC BUGS:
-- Wrong comparison operators (< vs >, <= vs >=, == vs ===)
-- Boolean logic inverted (!condition when should be condition)
-- Ternary operator wrong (condition ? wrong : right)
-- Short-circuit evaluation wrong (&& when should ||, or vice versa)
-- Switch statement missing break or wrong case
-
-TYPE COERCION:
-- String + number when should be number + number
-- Type coercion causing NaN or wrong values
-- parseInt/parseFloat with wrong radix or on wrong value
-- toString() called on wrong value or at wrong time
-
-AVOID THESE - THEY RARELY HAVE VISIBLE IMPACT:
-- Simple operator swaps that don't affect output (+ to - in non-displayed calculations)
-- Changes to error handling that only affect edge cases
-- Changes to logging or debugging code
-- Changes to comments or type annotations
-- Micro-optimizations or performance-only bugs
-
-=== TECHNICAL DEBT / DATA LAYER COMPLEXITY (MEDIUM/HIGH STRESS ONLY) ===
-For MEDIUM and HIGH stress levels, simulate legacy codebase technical debt by adding "data layer" functions that data must pass through. This makes bugs MUCH harder to trace because developers must follow the data flow through multiple transformations.
-
-FOR MEDIUM STRESS - Add 1-2 intermediate functions:
-- Add a "normalizer" function that transforms data before it's used
-- Add a "formatter" that prepares data for display
-- Add a "validator" that checks and potentially modifies data
-- The bug should be in one of these intermediate functions, not the main code
-
-Example pattern for MEDIUM:
-\`\`\`
-// Added "for consistency" by a previous developer
-function normalizeUserData(user) {
-  return {
-    ...user,
-    name: user.name.slice(1), // BUG: cuts off first character
-    id: user.id
-  };
-}
-
-// Original code now pipes through the normalizer
-const displayUser = normalizeUserData(rawUser);
-\`\`\`
-
-FOR HIGH STRESS - Add 2-4 chained transformation functions (data pipeline):
-- Create a pipeline where data flows: raw → validate → normalize → format → transform → display
-- Each function should look "reasonable" but one contains the bug
-- Add realistic-looking comments like "// TODO: refactor this" or "// Legacy - do not remove"
-- The functions should have plausible names that suggest they serve a purpose
-
-Example pattern for HIGH:
-\`\`\`
-// Data processing pipeline (added during Q3 refactor)
-const processItems = (items) => {
-  return items
-    .map(validateItem)
-    .map(normalizeItem)
-    .filter(isValidItem)
-    .map(formatForDisplay);
-};
-
-function validateItem(item) { /* looks fine */ return item; }
-function normalizeItem(item) { 
-  // Standardize IDs across system
-  const baseId = items[0]?.id || item.id; // BUG: uses first item's ID for ALL items
-  return { ...item, id: baseId };
-}
-function isValidItem(item) { return item.status !== 'deleted'; }
-function formatForDisplay(item) { /* looks fine */ return item; }
-\`\`\`
-
-The goal is to make the developer trace through multiple functions to find where the data gets corrupted. This mimics real-world debugging of legacy systems with accumulated technical debt.
 
 Here is the code to modify:
 
@@ -335,32 +781,12 @@ Respond with ONLY a JSON object in this exact format (no markdown, no explanatio
   "symptoms": ["Detailed bug report 1", "Detailed bug report 2"]
 }
 
-IMPORTANT about "symptoms": These should be written like DETAILED bug reports from a QA tester or team member. Each symptom should be a mini bug report that gives enough context to reproduce and investigate the issue. Include:
-- What action was being performed
-- What was expected to happen
-- What actually happened instead
-- Any relevant context (e.g., specific data, conditions, or state)
+IMPORTANT about "symptoms": Write these like bug reports from a QA tester who sees the UI, not the code:
+- Format: "[Location/Action]: [What went wrong]. Expected [X] but got [Y]."
+- Do NOT mention variable names, function names, or line numbers
+- Describe what the user SEES, not what the code does
 
-Format each symptom as: "[Action/Context]: [What went wrong]. Expected [X] but got [Y]."
-
-Examples of GOOD detailed symptoms (HIGHLY VISIBLE bugs):
-- "In the search bar: The first letter of my search is being cut off. I typed 'Apple' but it searches for 'pple'. Every search term loses its first character."
-- "On the product list page: The last 2 items are completely missing. We have 10 products but only 8 show up. Scrolling to the end, items 9 and 10 are nowhere to be found."
-- "In the user cards: Every single card shows the same user ID (#1001). All 50 users display 'ID: 1001' even though they should each have unique IDs."
-- "On the dashboard: All the user names are showing as 'undefined'. The email and avatar load fine but where the name should be it just says 'undefined'."
-- "After loading the orders page: App crashes with white screen. Something about 'Cannot read property of null'. Looks like order data is being deleted before it's displayed."
-- "In the item list: Half the items are completely blank. Items 1, 3, 5, 7 show correctly but items 2, 4, 6, 8 are empty cards with no content."
-- "On the pricing page: All prices show $0.00. We have items ranging from $10-$500 but every single one displays as $0.00."
-- "In the data table: The 'Status' column shows the wrong status for every row. Items marked 'Active' in the database show as 'Inactive' and vice versa."
-- "When viewing comments: Every comment shows the exact same text - the first comment's text is repeated for all 20 comments."
-- "On the counter display: It shows '3 items' but there are clearly 5 items visible on screen. The count is always 2 less than the actual number."
-
-Do NOT mention specific variable names, function names, or line numbers. Describe from a tester's perspective who can see the UI and behavior but not the code.
-
-IMPORTANT: Symptoms must describe REPRODUCIBLE issues - bugs that happen every single time under the described conditions. Do NOT write symptoms like "sometimes works" or "intermittently fails". The bug should be 100% reproducible.
-
-The modifiedCode must be the COMPLETE file content with your bugs inserted. Do not truncate or summarize.
-You CAN add new functions, helpers, or code - not just modify existing code. If you add a helper function, make sure to actually USE it somewhere in the existing code so the bug manifests.`;
+The modifiedCode must be the COMPLETE file content. Do not truncate or summarize.`;
 
   try {
     const { text } = await generateText({
@@ -383,7 +809,7 @@ You CAN add new functions, helpers, or code - not just modify existing code. If 
     return {
       content: parsed.modifiedCode,
       changes: parsed.changes,
-      symptoms: parsed.symptoms || generateFallbackSymptoms(parsed.changes),
+      symptoms: parsed.symptoms || selectedBugs.map(b => b.sampleSymptom),
     };
   } catch (error) {
     console.error("AI stress generation failed:", error);
@@ -742,4 +1168,3 @@ function fallbackStress(content: string, filename: string, _context?: string, st
 
   return { content: modifiedContent, changes, symptoms: generateFallbackSymptoms(changes) };
 }
-
