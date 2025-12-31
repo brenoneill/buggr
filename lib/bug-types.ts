@@ -14,8 +14,6 @@ export interface BugType {
   examples: string[];
   /** Sample symptom description from a tester's perspective */
   sampleSymptom: string;
-  /** Priority level - high impact bugs are more visible to users */
-  priority: "high" | "medium" | "low";
 }
 
 /**
@@ -34,7 +32,6 @@ export const BUG_TYPES: BugType[] = [
       "title.split('').reverse().join('')",
     ],
     sampleSymptom: "In the user profile: All names appear backwards. 'John Smith' shows as 'htimS nhoJ'.",
-    priority: "high",
   },
   {
     id: "string-uppercase",
@@ -46,7 +43,6 @@ export const BUG_TYPES: BugType[] = [
       "description.toLowerCase()",
     ],
     sampleSymptom: "On the product page: All product names are in ALL CAPS when they should be normal case.",
-    priority: "high",
   },
   {
     id: "string-remove-spaces",
@@ -58,7 +54,6 @@ export const BUG_TYPES: BugType[] = [
       "sentence.split(' ').join('')",
     ],
     sampleSymptom: "In the description field: All text runs together with no spaces. 'Hello World' shows as 'HelloWorld'.",
-    priority: "high",
   },
   {
     id: "string-slice-start",
@@ -70,7 +65,6 @@ export const BUG_TYPES: BugType[] = [
       "title.slice(2)",
     ],
     sampleSymptom: "In the search bar: The first letter of every search is being cut off. Typing 'Apple' searches for 'pple'.",
-    priority: "high",
   },
   {
     id: "string-slice-end",
@@ -82,7 +76,6 @@ export const BUG_TYPES: BugType[] = [
       "text.slice(0, -3)",
     ],
     sampleSymptom: "In the labels: The last few characters are cut off. 'Description' shows as 'Descript'.",
-    priority: "high",
   },
   {
     id: "string-wrong-encoding",
@@ -94,7 +87,6 @@ export const BUG_TYPES: BugType[] = [
       "escape(title)",
     ],
     sampleSymptom: "On the display: Text shows weird encoding. 'Hello World' shows as 'Hello%20World'.",
-    priority: "high",
   },
   {
     id: "string-wrong-concat",
@@ -106,7 +98,6 @@ export const BUG_TYPES: BugType[] = [
       "parts.join('-') instead of parts.join(' ')",
     ],
     sampleSymptom: "On the user card: Names appear as 'Smith John' instead of 'John Smith'.",
-    priority: "high",
   },
 
   // === DATA DISAPPEARING ===
@@ -120,7 +111,6 @@ export const BUG_TYPES: BugType[] = [
       "data.slice(0, -3).forEach(...)",
     ],
     sampleSymptom: "On the product list: The last 2 items are completely missing. We have 10 products but only 8 show up.",
-    priority: "high",
   },
   {
     id: "array-filter-half",
@@ -132,7 +122,6 @@ export const BUG_TYPES: BugType[] = [
       ".filter((item, idx) => idx % 2 !== 0)",
     ],
     sampleSymptom: "In the item grid: Half the items are completely blank. Every other card shows as empty.",
-    priority: "high",
   },
   {
     id: "array-return-empty",
@@ -144,7 +133,6 @@ export const BUG_TYPES: BugType[] = [
       "if (true) return [];",
     ],
     sampleSymptom: "On the dashboard: The list is completely empty even though we have data in the database.",
-    priority: "high",
   },
   {
     id: "array-wrong-filter",
@@ -156,7 +144,6 @@ export const BUG_TYPES: BugType[] = [
       ".filter(() => false)",
     ],
     sampleSymptom: "On the page: All items have disappeared. The list that should have 50 items shows nothing.",
-    priority: "high",
   },
   {
     id: "destructure-wrong",
@@ -168,7 +155,6 @@ export const BUG_TYPES: BugType[] = [
       "const { data: items } = response; // wrong property",
     ],
     sampleSymptom: "On the form: All the pre-filled values are missing. Fields that should have user data are empty.",
-    priority: "high",
   },
 
   // === ALL ITEMS SAME VALUE ===
@@ -182,7 +168,6 @@ export const BUG_TYPES: BugType[] = [
       "data.map(() => ({ id: data[0].id }))",
     ],
     sampleSymptom: "In the user cards: Every single card shows the same ID (#1001). All 50 users display the same ID.",
-    priority: "high",
   },
   {
     id: "same-text-all",
@@ -194,7 +179,6 @@ export const BUG_TYPES: BugType[] = [
       "data.map(item => ({ ...item, title: data[0].title }))",
     ],
     sampleSymptom: "When viewing comments: Every comment shows the exact same text - the first comment's text is repeated for all.",
-    priority: "high",
   },
   {
     id: "cache-outside-loop",
@@ -206,7 +190,6 @@ export const BUG_TYPES: BugType[] = [
       "let value = getFirst(); for(...) { use(value); }",
     ],
     sampleSymptom: "On the list: All items show identical values. The first item's data is duplicated across every row.",
-    priority: "high",
   },
   {
     id: "wrong-closure",
@@ -218,7 +201,6 @@ export const BUG_TYPES: BugType[] = [
       "items.forEach((_, i) => { callbacks.push(() => items[i]) })",
     ],
     sampleSymptom: "In the click handlers: Every button performs the same action - they all act like the last button.",
-    priority: "medium",
   },
 
   // === DATA SHOWING AS UNDEFINED/NULL ===
@@ -232,7 +214,6 @@ export const BUG_TYPES: BugType[] = [
       "user.emial instead of user.email",
     ],
     sampleSymptom: "On the dashboard: All the user names are showing as 'undefined'. The email loads fine but names are blank.",
-    priority: "high",
   },
   {
     id: "return-undefined",
@@ -244,7 +225,6 @@ export const BUG_TYPES: BugType[] = [
       "return null;",
     ],
     sampleSymptom: "After loading: The entire content area is blank. Data exists but nothing displays.",
-    priority: "high",
   },
   {
     id: "delete-before-use",
@@ -256,7 +236,6 @@ export const BUG_TYPES: BugType[] = [
       "obj.data = undefined; // then use obj.data",
     ],
     sampleSymptom: "On the profile page: Key information is missing. The name field shows nothing even though we set it.",
-    priority: "high",
   },
   {
     id: "wrong-optional-chain",
@@ -268,7 +247,6 @@ export const BUG_TYPES: BugType[] = [
       "data.items.length instead of data?.items?.length",
     ],
     sampleSymptom: "After loading the page: App crashes with white screen. Console shows 'Cannot read property of null' error.",
-    priority: "high",
   },
   {
     id: "wrong-nullish",
@@ -280,7 +258,6 @@ export const BUG_TYPES: BugType[] = [
       "count || 0 when 0 is valid",
     ],
     sampleSymptom: "On the form: Default values aren't appearing correctly. Empty fields should show placeholder text but don't.",
-    priority: "medium",
   },
 
   // === CALCULATION/DISPLAY BUGS ===
@@ -294,7 +271,6 @@ export const BUG_TYPES: BugType[] = [
       "count + 1",
     ],
     sampleSymptom: "On the counter display: Shows '3 items' but there are clearly 5 items on screen. The count is always 2 less.",
-    priority: "high",
   },
   {
     id: "return-zero",
@@ -306,7 +282,6 @@ export const BUG_TYPES: BugType[] = [
       "return 0; // return price * quantity;",
     ],
     sampleSymptom: "On the pricing page: All prices show $0.00. Items ranging from $10-$500 all display as zero.",
-    priority: "high",
   },
   {
     id: "wrong-math-op",
@@ -318,7 +293,6 @@ export const BUG_TYPES: BugType[] = [
       "total - tax instead of total + tax",
     ],
     sampleSymptom: "In the cart: The total price calculation is completely wrong. Buying 5 items at $10 shows $15 instead of $50.",
-    priority: "high",
   },
   {
     id: "wrong-comparison",
@@ -330,7 +304,6 @@ export const BUG_TYPES: BugType[] = [
       "while (i <= 0) instead of while (i >= 0)",
     ],
     sampleSymptom: "On the pagination: Clicking 'Next' goes backwards, and 'Previous' goes forwards. Navigation is completely reversed.",
-    priority: "medium",
   },
   {
     id: "wrong-rounding",
@@ -342,7 +315,6 @@ export const BUG_TYPES: BugType[] = [
       "Math.round(value) instead of Math.floor(value)",
     ],
     sampleSymptom: "In the quantity display: Values are always rounded incorrectly. 4.9 items shows as 4 instead of 5.",
-    priority: "medium",
   },
 
   // === RENDERING/DISPLAY BUGS ===
@@ -356,7 +328,6 @@ export const BUG_TYPES: BugType[] = [
       "condition ? null : <Item /> instead of condition ? <Item /> : null",
     ],
     sampleSymptom: "When viewing the list: Items that should be visible are hidden, and hidden items are showing.",
-    priority: "high",
   },
   {
     id: "map-to-foreach",
@@ -367,7 +338,6 @@ export const BUG_TYPES: BugType[] = [
       "items.forEach(item => <Item />) instead of items.map(...)",
     ],
     sampleSymptom: "On the list page: The entire list is blank. The container exists but no items render inside.",
-    priority: "high",
   },
   {
     id: "wrong-sort",
@@ -379,7 +349,6 @@ export const BUG_TYPES: BugType[] = [
       ".sort((a, b) => a.name - b.name) // strings don't subtract",
     ],
     sampleSymptom: "On the feed: Newest items appear at the bottom instead of the top. The sort order is completely reversed.",
-    priority: "medium",
   },
   {
     id: "wrong-index",
@@ -391,7 +360,6 @@ export const BUG_TYPES: BugType[] = [
       "array[index + 1] instead of array[index]",
     ],
     sampleSymptom: "On the detail view: It's showing the next item's info, not the one I clicked. Everything is offset by 1.",
-    priority: "high",
   },
 
   // === ASYNC/PROMISE BUGS ===
@@ -405,7 +373,6 @@ export const BUG_TYPES: BugType[] = [
       "const result = processAsync(); // shows [object Promise]",
     ],
     sampleSymptom: "On the dashboard: Instead of data, I see '[object Promise]' displayed as text.",
-    priority: "high",
   },
   {
     id: "wrong-promise-method",
@@ -417,7 +384,6 @@ export const BUG_TYPES: BugType[] = [
       "Promise.race([...]) // only returns first result",
     ],
     sampleSymptom: "When loading the page: Sometimes the whole page fails to load if any single request has an issue.",
-    priority: "medium",
   },
 
   // === FORM/INPUT BUGS ===
@@ -431,7 +397,6 @@ export const BUG_TYPES: BugType[] = [
       "input.substring(0, input.length - 1)",
     ],
     sampleSymptom: "In the text input: I can only type 5 characters. Anything longer gets cut off immediately.",
-    priority: "high",
   },
   {
     id: "input-clear",
@@ -443,7 +408,6 @@ export const BUG_TYPES: BugType[] = [
       "setInput(null)",
     ],
     sampleSymptom: "In the form: Every time I type something, the field clears itself. I can't enter any text.",
-    priority: "high",
   },
   {
     id: "validation-invert",
@@ -455,7 +419,6 @@ export const BUG_TYPES: BugType[] = [
       "if (!isNaN(value)) return 'Must be a number'",
     ],
     sampleSymptom: "On the form: Valid emails are rejected and gibberish is accepted. Validation seems backwards.",
-    priority: "high",
   },
   {
     id: "wrong-event",
@@ -467,7 +430,6 @@ export const BUG_TYPES: BugType[] = [
       "onSubmit instead of onClick for a button",
     ],
     sampleSymptom: "In the dropdown: Selecting an option doesn't do anything. I have to click somewhere else for it to register.",
-    priority: "medium",
   },
 
   // === LOGIC BUGS ===
@@ -481,7 +443,6 @@ export const BUG_TYPES: BugType[] = [
       "return !valid instead of return valid",
     ],
     sampleSymptom: "On the settings page: The toggle says 'ON' but the feature is disabled. The display is opposite of reality.",
-    priority: "medium",
   },
   {
     id: "wrong-ternary",
@@ -493,7 +454,6 @@ export const BUG_TYPES: BugType[] = [
       "isActive ? 'inactive' : 'active'",
     ],
     sampleSymptom: "In the status display: Active items show as 'Inactive' and vice versa. The status labels are swapped.",
-    priority: "high",
   },
   {
     id: "wrong-logical-op",
@@ -505,7 +465,6 @@ export const BUG_TYPES: BugType[] = [
       "condition1 || condition2 instead of condition1 && condition2",
     ],
     sampleSymptom: "On the filter: Items only show when ALL filters match instead of ANY. Finding items is nearly impossible.",
-    priority: "medium",
   },
 
   // === TYPE COERCION BUGS ===
@@ -519,7 +478,6 @@ export const BUG_TYPES: BugType[] = [
       "quantity + price // if quantity is string",
     ],
     sampleSymptom: "In the total: The price shows $510.00 instead of $15.00. The math seems way off.",
-    priority: "high",
   },
   {
     id: "wrong-parse",
@@ -531,7 +489,6 @@ export const BUG_TYPES: BugType[] = [
       "parseFloat('abc') // results in NaN",
     ],
     sampleSymptom: "On the quantity input: Entering '08' or '09' gives weird results. The numbers seem to parse incorrectly.",
-    priority: "medium",
   },
 
   // === DATA PIPELINE BUGS (for medium/high stress) ===
@@ -545,7 +502,6 @@ export const BUG_TYPES: BugType[] = [
       "const normalize = (data) => ({ ...data, id: data.id + 1 });",
     ],
     sampleSymptom: "Throughout the app: Data looks slightly wrong everywhere. Names are missing first letter, IDs are off by 1.",
-    priority: "medium",
   },
   {
     id: "pipeline-formatter",
@@ -557,7 +513,6 @@ export const BUG_TYPES: BugType[] = [
       "const prepareData = (arr) => arr.map(() => arr[0]);",
     ],
     sampleSymptom: "On every list: The last item is always missing, or all items show the same data.",
-    priority: "medium",
   },
   {
     id: "pipeline-validator",
@@ -569,7 +524,6 @@ export const BUG_TYPES: BugType[] = [
       "const checkData = (data) => data.isValid ? null : data;",
     ],
     sampleSymptom: "After validation: Valid items are being rejected. Good data disappears during processing.",
-    priority: "medium",
   },
   {
     id: "pipeline-chain",
@@ -581,7 +535,6 @@ export const BUG_TYPES: BugType[] = [
       "data |> validate |> transform |> display // one step has the bug",
     ],
     sampleSymptom: "Data corruption happens somewhere in the processing. The raw data is fine but displayed data is wrong.",
-    priority: "high",
   },
 ];
 
