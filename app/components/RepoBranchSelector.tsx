@@ -59,7 +59,9 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken }: RepoBra
   const [showCreateBranch, setShowCreateBranch] = useState(false);
   const [branchSuffix, setBranchSuffix] = useState("");
   const [stressContext, setStressContext] = useState("");
-  const [stressLevel, setStressLevel] = useState<"low" | "medium" | "high">("medium");
+  const [stressLevel, setStressLevel] = useState<"low" | "medium" | "high" | "custom">("medium");
+  const [customFilesCount, setCustomFilesCount] = useState(1);
+  const [customBugCount, setCustomBugCount] = useState(1);
   const [creatingBranch, setCreatingBranch] = useState(false);
   const [loadingStep, setLoadingStep] = useState<number>(0);
   const [branchSuccess, setBranchSuccess] = useState<string | null>(null);
@@ -293,19 +295,40 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken }: RepoBra
     const base = `stresst-${selectedBranch}-${timestamp}`;
     const fullBranchName = branchSuffix.trim() ? `${base}-${branchSuffix.trim()}` : base;
 
-    // Filter out removed files, sort by most changes, and limit to top 3
-    // This keeps token usage reasonable while targeting the most impactful files
-    const MAX_FILES_TO_STRESS = 3;
-    const filesToStress = commitDetails.files
-      .filter((f) => f.status !== "removed")
-      .sort((a, b) => b.additions + b.deletions - (a.additions + a.deletions))
-      .slice(0, MAX_FILES_TO_STRESS)
-      .map((f) => f.filename);
-
-    if (filesToStress.length === 0) {
+    // Filter out removed files, sort by most changes, and limit based on stress level
+    // Easy (low): 1 file, Medium: 2 files, Hard (high): 3 files, Custom: user-defined
+    const MAX_FILES_TO_STRESS = stressLevel === "custom" 
+      ? customFilesCount 
+      : stressLevel === "low" 
+        ? 1 
+        : stressLevel === "medium" 
+          ? 2 
+          : 3;
+    const availableFiles = commitDetails.files.filter((f) => f.status !== "removed");
+    
+    if (availableFiles.length === 0) {
       setError("No files available to introduce stress to");
       return;
     }
+
+    // Check if there are enough files for the selected stress level
+    if (availableFiles.length < MAX_FILES_TO_STRESS) {
+      const stressLevelName = stressLevel === "custom" 
+        ? "custom" 
+        : stressLevel === "low" 
+          ? "easy" 
+          : stressLevel === "medium" 
+            ? "medium" 
+            : "hard";
+      setError(
+        `Only ${availableFiles.length} file${availableFiles.length === 1 ? "" : "s"} available, but ${stressLevelName} mode requires ${MAX_FILES_TO_STRESS}. Proceeding with ${availableFiles.length} file${availableFiles.length === 1 ? "" : "s"}.`
+      );
+    }
+
+    const filesToStress = availableFiles
+      .sort((a, b) => b.additions + b.deletions - (a.additions + a.deletions))
+      .slice(0, MAX_FILES_TO_STRESS)
+      .map((f) => f.filename);
 
     setCreatingBranch(true);
     setLoadingStep(0);
@@ -337,18 +360,36 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken }: RepoBra
 
       // Step 3: Introduce stress on the new branch
       setLoadingStep(3);
+      const requestBody: {
+        owner: string;
+        repo: string;
+        branch: string;
+        files: string[];
+        context?: string;
+        difficulty: "low" | "medium" | "high" | "custom";
+        originalCommitSha: string;
+        customFilesCount?: number;
+        customBugCount?: number;
+      } = {
+        owner: selectedRepo.owner.login,
+        repo: selectedRepo.name,
+        branch: fullBranchName,
+        files: filesToStress,
+        context: stressContext.trim() || undefined,
+        difficulty: stressLevel,
+        originalCommitSha: selectedCommit.sha,
+      };
+
+      // Add custom values if custom mode is selected
+      if (stressLevel === "custom") {
+        requestBody.customFilesCount = customFilesCount;
+        requestBody.customBugCount = customBugCount;
+      }
+
       const stressResponse = await fetch("/api/github/stress", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          owner: selectedRepo.owner.login,
-          repo: selectedRepo.name,
-          branch: fullBranchName,
-          files: filesToStress,
-          context: stressContext.trim() || undefined,
-          difficulty: stressLevel,
-          originalCommitSha: selectedCommit.sha,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       // Step 4: Committing changes
@@ -389,6 +430,8 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken }: RepoBra
       setBranchSuffix("");
       setStressContext("");
       setStressLevel("medium");
+      setCustomFilesCount(1);
+      setCustomBugCount(1);
       setShowCreateBranch(false);
 
       // Refresh branches list
@@ -858,6 +901,11 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken }: RepoBra
                 onStressContextChange={setStressContext}
                 stressLevel={stressLevel}
                 onStressLevelChange={setStressLevel}
+                customFilesCount={customFilesCount}
+                onCustomFilesCountChange={setCustomFilesCount}
+                customBugCount={customBugCount}
+                onCustomBugCountChange={setCustomBugCount}
+                maxFilesAvailable={commitDetails?.files?.filter((f) => f.status !== "removed").length || 0}
                 isLoading={creatingBranch}
                 loadingStep={loadingStep}
                 loadingSteps={LOADING_STEPS}
@@ -867,6 +915,8 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken }: RepoBra
                   setBranchSuffix("");
                   setStressContext("");
                   setStressLevel("medium");
+                  setCustomFilesCount(1);
+                  setCustomBugCount(1);
                 }}
               />
             )}

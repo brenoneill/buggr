@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { owner, repo, branch, files, context, difficulty, originalCommitSha } = body;
+    const { owner, repo, branch, files, context, difficulty, originalCommitSha, customFilesCount, customBugCount } = body;
 
     if (!owner || !repo || !branch || !files || !Array.isArray(files)) {
       return NextResponse.json(
@@ -42,17 +42,39 @@ export async function POST(request: NextRequest) {
     const stressContext = typeof context === "string" ? context.slice(0, 200) : undefined;
     
     // Validate stress level
-    const validLevels = ["low", "medium", "high"] as const;
-    const stressLevel: "low" | "medium" | "high" = validLevels.includes(difficulty) ? difficulty : "medium";
+    const validLevels = ["low", "medium", "high", "custom"] as const;
+    const stressLevel: "low" | "medium" | "high" | "custom" = validLevels.includes(difficulty) ? difficulty : "medium";
 
     // Calculate total bug count based on stress level (TOTAL across all files, not per file)
-    const STRESS_CONFIGS = {
-      low: { bugCountMin: 1, bugCountMax: 2 },
-      medium: { bugCountMin: 2, bugCountMax: 3 },
-      high: { bugCountMin: 2, bugCountMax: 3 },
-    };
-    const config = STRESS_CONFIGS[stressLevel];
-    const totalBugCount = Math.floor(Math.random() * (config.bugCountMax - config.bugCountMin + 1)) + config.bugCountMin;
+    let totalBugCount: number;
+    if (stressLevel === "custom") {
+      // Use custom bug count if provided, otherwise default to 1
+      totalBugCount = typeof customBugCount === "number" && customBugCount > 0 ? customBugCount : 1;
+    } else {
+      // Fixed bug counts: Low: 2, Medium: 4, High: 6
+      const STRESS_CONFIGS = {
+        low: 2,
+        medium: 4,
+        high: 6,
+      };
+      totalBugCount = STRESS_CONFIGS[stressLevel];
+    }
+
+    // Determine how many files to process based on stress level
+    let filesToProcess: number;
+    if (stressLevel === "custom") {
+      filesToProcess = typeof customFilesCount === "number" && customFilesCount > 0
+        ? Math.min(customFilesCount, files.length)
+        : 1;
+    } else {
+      // Low: 1 file, Medium: 2 files, High: 3 files
+      const filesByLevel = {
+        low: 1,
+        medium: 2,
+        high: 3,
+      };
+      filesToProcess = Math.min(filesByLevel[stressLevel], files.length);
+    }
 
     const results: { file: string; success: boolean; changes?: string[]; symptoms?: string[]; error?: string }[] = [];
     const allSymptoms: string[] = [];
@@ -63,8 +85,8 @@ export async function POST(request: NextRequest) {
       return ["ts", "tsx", "js", "jsx", "py", "java", "go", "rs", "c", "cpp", "h", "cs"].includes(ext || "");
     });
     
-    // Since we're only processing one file, allow up to 5000 lines
-    const maxFileLines = MAX_FILE_LINES_SINGLE;
+    // Determine line limit based on number of files to process
+    const maxFileLines = filesToProcess === 1 ? MAX_FILE_LINES_SINGLE : MAX_FILE_LINES_MULTIPLE;
 
     // First, collect all valid files that we can process (fetch content and check size)
     interface ProcessableFile {
@@ -120,7 +142,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Randomly pick ONE file to stress
+    // Select files to stress
     if (processableFiles.length === 0) {
       return NextResponse.json({
         message: "No processable files found",
@@ -129,58 +151,74 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Randomly select one file
-    const selectedFileIndex = Math.floor(Math.random() * processableFiles.length);
-    const selectedFile = processableFiles[selectedFileIndex];
+    // Select files to process (up to filesToProcess)
+    const selectedFiles: ProcessableFile[] = [];
+    const shuffledFiles = [...processableFiles].sort(() => Math.random() - 0.5); // Shuffle for randomness
+    for (let i = 0; i < Math.min(filesToProcess, shuffledFiles.length); i++) {
+      selectedFiles.push(shuffledFiles[i]);
+    }
 
-    // Mark all other files as skipped
-    for (let i = 0; i < processableFiles.length; i++) {
-      if (i !== selectedFileIndex) {
+    // Mark unselected files as skipped
+    for (const file of processableFiles) {
+      if (!selectedFiles.includes(file)) {
         results.push({ 
-          file: processableFiles[i].filePath, 
+          file: file.filePath, 
           success: false, 
           error: "Not selected for stress testing" 
         });
       }
     }
 
-    // Apply all bugs to the selected file
-    try {
-      const { filePath, content: decodedContent, sha } = selectedFile;
-      
-      // Use AI to introduce subtle stress with all bugs in this single file
-      const { content: modifiedContent, changes, symptoms } = await introduceAIStress(
-        decodedContent, 
-        filePath, 
-        stressContext, 
-        stressLevel,
-        totalBugCount
-      );
+    // Distribute bugs across selected files
+    // For simplicity, distribute bugs evenly (or as evenly as possible)
+    const bugsPerFile = Math.floor(totalBugCount / selectedFiles.length);
+    const remainingBugs = totalBugCount % selectedFiles.length;
+    const bugDistribution: number[] = selectedFiles.map((_, index) => 
+      bugsPerFile + (index < remainingBugs ? 1 : 0)
+    );
 
-      // Only update if changes were made
-      if (changes.length > 0 && modifiedContent !== decodedContent) {
-        await updateFile(
-          session.accessToken,
-          owner,
-          repo,
-          filePath,
-          modifiedContent,
-          `🔥 ${filePath} is stressed out`,
-          sha,
-          branch
+    // Apply stress to each selected file
+    for (let i = 0; i < selectedFiles.length; i++) {
+      const selectedFile = selectedFiles[i];
+      const bugsForThisFile = bugDistribution[i];
+
+      try {
+        const { filePath, content: decodedContent, sha } = selectedFile;
+        
+        // Use AI to introduce subtle stress with bugs for this file
+        const { content: modifiedContent, changes, symptoms } = await introduceAIStress(
+          decodedContent, 
+          filePath, 
+          stressContext, 
+          stressLevel === "custom" ? "high" : stressLevel, // Use high subtlety for custom mode
+          bugsForThisFile
         );
 
-        results.push({ file: filePath, success: true, changes, symptoms });
-        allSymptoms.push(...symptoms);
-      } else {
-        results.push({ file: filePath, success: false, error: "No changes made" });
+        // Only update if changes were made
+        if (changes.length > 0 && modifiedContent !== decodedContent) {
+          await updateFile(
+            session.accessToken,
+            owner,
+            repo,
+            filePath,
+            modifiedContent,
+            `🔥 ${filePath} is stressed out`,
+            sha,
+            branch
+          );
+
+          results.push({ file: filePath, success: true, changes, symptoms });
+          allSymptoms.push(...symptoms);
+        } else {
+          results.push({ file: filePath, success: false, error: "No changes made" });
+        }
+      } catch (error) {
+        results.push({
+          file: selectedFile.filePath,
+          success: false,
+          error: error instanceof Error ? error.message : "Unknown error",
+        });
       }
-    } catch (error) {
-      results.push({
-        file: selectedFile.filePath,
-        success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
-      });
     }
 
     const successCount = results.filter((r) => r.success).length;
@@ -194,7 +232,7 @@ export async function POST(request: NextRequest) {
       const allChanges = successfulResults.flatMap((r) => r.changes || []);
       
       const metadata: StressMetadata = {
-        stressLevel,
+        stressLevel: stressLevel === "custom" ? "high" : stressLevel, // Store as high for custom
         bugCount: totalBugCount,
         createdAt: new Date().toISOString(),
         symptoms: uniqueSymptoms,

@@ -1,35 +1,233 @@
 import { generateText } from "ai";
+import { BugType, BUG_TYPES } from "./bug-types";
 
 /** Stress level configuration */
 type StressLevel = "low" | "medium" | "high";
 
 interface StressConfig {
-  bugCountMin: number;
-  bugCountMax: number;
+  bugCount: number;
   subtlety: string;
   description: string;
 }
 
 const STRESS_CONFIGS: Record<StressLevel, StressConfig> = {
   low: {
-    bugCountMin: 1,
-    bugCountMax: 2,
+    bugCount: 2,
     subtlety: "relatively obvious",
     description: "The bugs should be somewhat noticeable - things like obvious operator mistakes, clear logic inversions, or simple typos in variable names. A junior developer should be able to spot them with careful review. Keep the code structure simple and don't add extra abstraction layers.",
   },
   medium: {
-    bugCountMin: 2,
-    bugCountMax: 3,
+    bugCount: 4,
     subtlety: "subtle but findable",
     description: "The bugs should require careful code review to find - off-by-one errors, missing awaits that cause Promise objects to be used as values, edge case failures. A mid-level developer should need to trace through the logic to find them. You SHOULD add 1-2 'data layer' helper functions that data passes through before being used - mimicking technical debt where someone added abstraction layers 'for future flexibility'. The bug can be hidden in these intermediate functions. All bugs must be deterministic and reproducible.",
   },
   high: {
-    bugCountMin: 2,
-    bugCountMax: 3,
+    bugCount: 6,
     subtlety: "deviously subtle",
     description: "The bugs should be very hard to find but ALWAYS reproducible - subtle state mutations, edge cases with specific inputs, cascading errors where one bug masks another. Even senior developers should need debugging tools and careful analysis. You MUST add multiple 'data layer' functions that pipe data through 2-4 transformation steps before it reaches its destination - realistic 'legacy code' technical debt where data flows through normalizers, formatters, validators, mappers, etc. Hide bugs deep in these pipelines where a developer must trace the entire data flow to find them. This should mimic real legacy codebases with accumulated abstractions. IMPORTANT: All bugs must be 100% deterministic - no race conditions or timing-dependent issues.",
   },
 };
+
+
+/**
+ * Detects the framework/library used in the code based on content and filename.
+ * 
+ * @param content - File content to analyze
+ * @param filename - Filename to check for framework-specific patterns
+ * @returns Detected framework(s) as an array (e.g., ["react", "nextjs"])
+ */
+function detectFramework(content: string, filename: string): string[] {
+  const frameworks: string[] = [];
+  const lowerContent = content.toLowerCase();
+  const lowerFilename = filename.toLowerCase();
+
+  // React detection
+  if (
+    lowerContent.includes("useState") ||
+    lowerContent.includes("useEffect") ||
+    lowerContent.includes("useCallback") ||
+    lowerContent.includes("useMemo") ||
+    lowerContent.includes("useRef") ||
+    lowerContent.includes("react.") ||
+    lowerContent.includes("from 'react'") ||
+    lowerContent.includes('from "react"') ||
+    lowerFilename.endsWith(".jsx") ||
+    lowerFilename.endsWith(".tsx")
+  ) {
+    frameworks.push("react");
+  }
+
+  // Next.js detection
+  if (
+    lowerContent.includes("next/") ||
+    lowerContent.includes("useRouter") ||
+    lowerContent.includes("usePathname") ||
+    lowerContent.includes("useSearchParams") ||
+    lowerContent.includes("getServerSideProps") ||
+    lowerContent.includes("getStaticProps") ||
+    lowerContent.includes("metadata") ||
+    lowerContent.includes("generateMetadata") ||
+    lowerFilename.includes("page.tsx") ||
+    lowerFilename.includes("layout.tsx") ||
+    lowerFilename.includes("route.ts")
+  ) {
+    frameworks.push("nextjs");
+  }
+
+  return frameworks;
+}
+
+/**
+ * Selects random bug types ensuring variety across categories.
+ * Uses Fisher-Yates shuffle for true randomness.
+ * 
+ * Any bug type can be selected regardless of stress level - difficulty comes from
+ * the number of bugs and how they're implemented (abstraction layers, helper functions, etc.).
+ * Framework-specific bugs are prioritized when the framework is detected.
+ * 
+ * @param count - Number of bug types to select
+ * @param content - File content for framework detection
+ * @param filename - Filename for framework detection
+ * @param _stressLevel - Stress level (unused, kept for API compatibility)
+ * @returns Array of randomly selected bug types
+ */
+function selectRandomBugTypes(count: number, content: string, filename: string, _stressLevel: StressLevel): BugType[] {
+  // Detect framework
+  const detectedFrameworks = detectFramework(content, filename);
+  
+  // Separate framework-specific bugs from general bugs
+  const frameworkBugs = BUG_TYPES.filter(bug => 
+    bug.framework && detectedFrameworks.includes(bug.framework)
+  );
+  const generalBugs = BUG_TYPES.filter(bug => !bug.framework);
+  
+  // Shuffle both lists
+  const shuffleArray = <T>(arr: T[]): T[] => {
+    const shuffled = [...arr];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  };
+  
+  const shuffledFrameworkBugs = shuffleArray(frameworkBugs);
+  const shuffledGeneralBugs = shuffleArray(generalBugs);
+  
+  // If framework detected and we have framework bugs, do 50/50 split
+  const shouldDoBalancedSplit = detectedFrameworks.length > 0 && frameworkBugs.length > 0;
+  
+  if (shouldDoBalancedSplit) {
+    // Calculate 50/50 split (round framework bugs up if odd)
+    const frameworkCount = Math.ceil(count / 2);
+    const generalCount = count - frameworkCount;
+    
+    const selected: BugType[] = [];
+    const usedCategories = new Set<string>();
+    
+    // Helper function to select bugs ensuring category variety
+    const selectWithVariety = (
+      bugPool: BugType[],
+      targetCount: number,
+      usedCategoriesSet: Set<string>
+    ): BugType[] => {
+      const selectedBugs: BugType[] = [];
+      
+      // First pass: pick one from each category
+      for (const bug of bugPool) {
+        if (selectedBugs.length >= targetCount) break;
+        if (!usedCategoriesSet.has(bug.category)) {
+          selectedBugs.push(bug);
+          usedCategoriesSet.add(bug.category);
+        }
+      }
+      
+      // Second pass: if we still need more, allow category repeats
+      for (const bug of bugPool) {
+        if (selectedBugs.length >= targetCount) break;
+        if (!selectedBugs.includes(bug)) {
+          selectedBugs.push(bug);
+        }
+      }
+      
+      return selectedBugs;
+    };
+    
+    // Select framework bugs (up to available count)
+    const availableFrameworkCount = Math.min(frameworkCount, shuffledFrameworkBugs.length);
+    const selectedFrameworkBugs = selectWithVariety(
+      shuffledFrameworkBugs,
+      availableFrameworkCount,
+      usedCategories
+    );
+    selected.push(...selectedFrameworkBugs);
+    
+    // Select general bugs (fill remaining slots)
+    const remainingCount = count - selected.length;
+    if (remainingCount > 0) {
+      const selectedGeneralBugs = selectWithVariety(
+        shuffledGeneralBugs,
+        remainingCount,
+        usedCategories
+      );
+      selected.push(...selectedGeneralBugs);
+    }
+    
+    return selected;
+  }
+  
+  // No framework detected or no framework bugs available - use all bugs
+  const allBugs = [...shuffledFrameworkBugs, ...shuffledGeneralBugs];
+  const selected: BugType[] = [];
+  const usedCategories = new Set<string>();
+
+  // First pass: pick one from each category
+  for (const bug of allBugs) {
+    if (selected.length >= count) break;
+    if (!usedCategories.has(bug.category)) {
+      selected.push(bug);
+      usedCategories.add(bug.category);
+    }
+  }
+
+  // Second pass: if we still need more, allow category repeats
+  for (const bug of allBugs) {
+    if (selected.length >= count) break;
+    if (!selected.includes(bug)) {
+      selected.push(bug);
+    }
+  }
+
+  return selected;
+}
+
+/**
+ * Formats selected bug types into a prompt instruction for the AI.
+ * 
+ * @param bugTypes - The bug types to format
+ * @returns Formatted string describing the bugs to introduce
+ */
+function formatBugInstructions(bugTypes: BugType[]): string {
+  return bugTypes.map((bug, index) => {
+    const examples = bug.examples.map(ex => `    - ${ex}`).join("\n");
+    return `BUG ${index + 1}: ${bug.name} (${bug.category})
+  Description: ${bug.description}
+  Examples:
+${examples}
+  Expected symptom: "${bug.sampleSymptom}"
+  IMPORTANT: This bug MUST be a CLEAR, VISIBLE breaking change that happens 100% of the time. The symptom must be immediately noticeable to a user.`;
+  }).join("\n\n");
+}
+
+/**
+ * Custom error class for AI stress generation failures.
+ */
+export class AIStressError extends Error {
+  constructor(message: string, public readonly cause?: unknown) {
+    super(message);
+    this.name = "AIStressError";
+  }
+}
 
 /**
  * Uses AI to introduce subtle but nasty breaking changes to code.
@@ -43,6 +241,7 @@ const STRESS_CONFIGS: Record<StressLevel, StressConfig> = {
  * @param stressLevel - Stress level: "low", "medium", or "high"
  * @param targetBugCount - Optional specific number of bugs to introduce (overrides stress level bug count)
  * @returns Modified content with AI-generated breaking changes, descriptions, and user-facing symptoms
+ * @throws AIStressError if AI is unavailable or fails to generate bugs
  */
 export async function introduceAIStress(
   content: string,
@@ -57,204 +256,73 @@ export async function introduceAIStress(
   try {
     const anthropicModule = await import("@ai-sdk/anthropic");
     anthropic = anthropicModule.anthropic;
-  } catch {
-    console.warn("@ai-sdk/anthropic not installed, using fallback stress");
-    return fallbackStress(content, filename, context, stressLevel);
+  } catch (error) {
+    throw new AIStressError(
+      "AI SDK not available. Please ensure @ai-sdk/anthropic is installed and ANTHROPIC_API_KEY is set.",
+      error
+    );
   }
 
   const config = STRESS_CONFIGS[stressLevel];
 
-  // Generate a random seed to encourage variety
-  const randomSeed = Math.random().toString(36).substring(2, 15);
-  // Use targetBugCount if provided, otherwise calculate from stress level config
+  // Calculate bug count
   const bugCount = targetBugCount !== undefined 
     ? targetBugCount 
-    : Math.floor(Math.random() * (config.bugCountMax - config.bugCountMin + 1)) + config.bugCountMin;
+    : config.bugCount;
+  
+  // RANDOMIZE: Select specific bug types before calling AI
+  const selectedBugs = selectRandomBugTypes(bugCount, content, filename, stressLevel);
+  const bugInstructions = formatBugInstructions(selectedBugs);
+  
+  // Detect framework for prompt enhancement
+  const detectedFrameworks = detectFramework(content, filename);
+  const frameworkInstruction = detectedFrameworks.length > 0
+    ? `\n\nFRAMEWORK DETECTED: ${detectedFrameworks.join(", ").toUpperCase()}\nWhen introducing bugs, prioritize framework-specific issues like hooks, component lifecycle, prop drilling, JSX rendering, etc. Make sure framework-specific bugs are realistic and follow framework patterns.`
+    : "";
   
   // Build optional focus area instruction
   const focusInstruction = context 
-    ? `\n\nFOCUS AREA: The user wants to specifically test: "${context}"\nPrioritize bugs related to this focus area when possible, but still be unpredictable.`
+    ? `\n\nFOCUS AREA: The user wants to specifically test: "${context}"\nTry to apply the bugs in areas related to this focus when possible.`
     : "";
   
-  const prompt = `You are a stress engineer tasked with introducing ${config.subtlety} breaking bugs into code.
-  
+  const prompt = `You are a stress engineer introducing specific bugs into code for a debugging training game.
+
 STRESS LEVEL: ${stressLevel.toUpperCase()}
 ${config.description}
 
-IMPORTANT: Be UNPREDICTABLE. Each time you modify code, choose DIFFERENT types of bugs. Do not fall into patterns.${focusInstruction}
+YOU MUST INTRODUCE EXACTLY THESE ${bugCount} BUG(S):
 
-CRITICAL - DO NOT REVEAL BUG LOCATIONS:
-- Do NOT add comments near bugs like "// bug here" or "// TODO: fix this"
-- Do NOT add comments that hint at what was changed
-- Do NOT make the bugs obvious through naming or comments
-- You MAY add realistic developer comments (like normal code would have), but these must NOT reveal the bug location
-- The goal is for the developer to FIND the bugs through debugging, not through reading comments
+${bugInstructions}
+
+${focusInstruction}
+
+${frameworkInstruction}
+
+CRITICAL RULES:
+1. Introduce EXACTLY the bugs listed above - do not substitute or add different bugs
+2. Each bug description tells you WHAT to do and gives examples - follow them closely
+3. Do NOT add comments that reveal bug locations (no "// bug here" or hints)
+4. Do NOT make syntax errors that IDEs would catch immediately
+5. Bugs must be DETERMINISTIC - same behavior every time with same input
+6. You MAY add helper functions to hide bugs (especially for medium/high stress)
+7. The code must still compile/parse correctly
+
+MANDATORY BUG REQUIREMENTS:
+- Bugs MUST be CLEARLY VISIBLE breaking changes - users must immediately see something is wrong
+- Bugs MUST cause OBVIOUS failures: wrong data displayed, missing items, crashes, incorrect calculations, reversed logic
+- DO NOT create subtle performance issues like "app gets slower" or "memory leaks" - these are not noticeable enough
+- Bugs MUST be 100% RELIABLE - they must happen every single time, not "sometimes" or "occasionally"
+- Each bug MUST produce a specific, describable symptom that a QA tester can clearly report
+- Examples of GOOD bugs: "All prices show $0", "Last 2 items missing", "Names appear backwards", "App crashes on load"
+- Examples of BAD bugs: "App is slightly slower", "Memory usage increases over time", "Sometimes fails"
 
 THE SCENARIO - A careless developer:
-This is for a learning game. Imagine the code was written by a careless, sloppy developer who:
+Imagine the code was written by a sloppy developer who:
 - Never writes tests or double-checks their work
 - Copies and pastes code without understanding it
 - Makes "quick fixes" that break other things
-- Over-engineers simple solutions
-- Leaves half-finished refactors
-- Doesn't handle edge cases
 - Gets confused by their own code
 - Makes typos and doesn't proofread
-
-The bugs can be somewhat over-the-top - this is a game after all! Just keep a small thread of plausibility.
-Think: "a bad developer COULD have done this" rather than "a good developer might accidentally do this"
-
-Your goal is to make changes that:
-1. Will cause the code to fail or behave incorrectly
-2. Could plausibly be written by a careless/incompetent developer
-3. Match the ${stressLevel} stress level described above
-4. Are NOT obvious syntax errors that an IDE would immediately catch
-5. Are VARIED - do not always use the same bug patterns
-6. You MAY add NEW code (helper functions, utilities) that introduces bugs - not just modify existing code
-7. Do NOT leave any hints in comments about where bugs are located
-8. Can be over-the-top but should still have a thread of "someone could have written this"
-
-CRITICAL - BUGS MUST BE DETERMINISTIC:
-- Every bug MUST reproduce 100% of the time under the same conditions
-- NO race conditions, timing-dependent bugs, or intermittent failures
-- NO bugs that "sometimes" happen or depend on execution speed
-- The bug should fail the SAME way every time the code runs with the same input
-- Users need to be able to reliably reproduce and debug the issue
-
-Random seed for this session: ${randomSeed}
-Number of bugs to introduce: ${bugCount} (stress level: ${stressLevel})
-
-CRITICAL: Bugs MUST be HIGH-IMPACT and CLEARLY VISIBLE. The user should immediately notice something is wrong when they use the app. Avoid subtle operator changes that don't affect behavior.
-
-Choose ${bugCount} bugs RANDOMLY from this list (vary your choices each time!):
-
-=== HIGHEST PRIORITY: DATA VISIBILITY BUGS (pick from these first!) ===
-These bugs cause OBVIOUS, VISIBLE problems that users notice immediately:
-
-STRING/TEXT CORRUPTION:
-- Slice off first or last character(s) of displayed text (e.g., name.slice(1) cuts off first letter)
-- Apply substring/slice that cuts off beginning or end of user-visible strings
-- Wrong string formatting that truncates or corrupts displayed data
-- Template literal that's missing a variable or has wrong interpolation order
-- String concatenation in wrong order so output looks jumbled
-
-DATA DISAPPEARING:
-- Array slice/filter that excludes the last 1-2 items (items.slice(0, -2) or length-2)
-- Map/filter that skips every other item or specific indices
-- Condition that hides certain items entirely (e.g., hide items where index > someValue)
-- Return empty array or undefined for certain data paths
-- Destructuring that extracts wrong properties, leaving displayed fields undefined
-
-ALL ITEMS SHOW SAME VALUE:
-- Set all IDs to the same value (using first item's ID for all items)
-- Use same index variable for all items in a loop (let i = 0 outside loop, never incrementing)
-- Cache a value outside the loop and use it for every iteration
-- Overwrite array with single repeated item
-- Return same object reference for all mapped items
-
-DATA SHOWING AS UNDEFINED/NULL:
-- Access wrong property name (e.g., item.nme instead of item.name)
-- Destructure with wrong property names so values become undefined
-- Return undefined instead of the actual data from a function
-- Delete or overwrite a property before it's used elsewhere
-- Access nested property without the intermediate object existing
-
-PROPERTY DELETION/NULL POINTER:
-- Delete a property from an object, then access it later causing crash
-- Set a required property to null/undefined before it's used
-- Reassign object to {} or null, then access properties on it
-- Clear an array before iterating over it
-- Overwrite function parameter before using it
-
-=== SECONDARY: OTHER IMPACTFUL BUGS ===
-
-CALCULATION/DISPLAY BUGS:
-- Off-by-one that causes visible miscounts (showing "3 items" when there are 4)
-- Wrong array length calculation affecting pagination or "showing X of Y"
-- Price/total calculations that are visibly wrong (off by whole dollars, not cents)
-- Date calculations showing wrong day (yesterday's date as today's)
-- Counter that starts at wrong number or increments incorrectly
-
-RENDERING BUGS:
-- Conditional rendering with inverted logic (show when should hide, hide when should show)
-- Wrong index in list rendering causing duplicate or missing items
-- Map that returns null for some items but not others
-- Filter with always-false or always-true condition
-- Sorting with comparison function that produces wrong order
-
-FORM/INPUT BUGS:
-- Value setter that truncates or corrupts user input
-- Input handler that clears the field or resets to wrong value
-- Form submission that sends wrong field values
-- Validation that rejects all valid inputs or accepts all invalid ones
-
-=== LOWER PRIORITY: SUBTLE BUGS (use sparingly) ===
-Only use these if you've already added high-impact bugs or the code doesn't support visible bugs:
-
-- Missing await (but only if it causes visible [object Promise] or undefined in UI)
-- Wrong comparison operators (but only if it visibly breaks filtering/display)
-- Boolean logic errors (but only if it causes visible wrong behavior)
-- Type coercion bugs (but only if it causes visible NaN or wrong values)
-
-AVOID THESE - THEY RARELY HAVE VISIBLE IMPACT:
-- Simple operator swaps that don't affect output (+ to - in non-displayed calculations)
-- Changes to error handling that only affect edge cases
-- Changes to logging or debugging code
-- Changes to comments or type annotations
-- Micro-optimizations or performance-only bugs
-
-=== TECHNICAL DEBT / DATA LAYER COMPLEXITY (MEDIUM/HIGH STRESS ONLY) ===
-For MEDIUM and HIGH stress levels, simulate legacy codebase technical debt by adding "data layer" functions that data must pass through. This makes bugs MUCH harder to trace because developers must follow the data flow through multiple transformations.
-
-FOR MEDIUM STRESS - Add 1-2 intermediate functions:
-- Add a "normalizer" function that transforms data before it's used
-- Add a "formatter" that prepares data for display
-- Add a "validator" that checks and potentially modifies data
-- The bug should be in one of these intermediate functions, not the main code
-
-Example pattern for MEDIUM:
-\`\`\`
-// Added "for consistency" by a previous developer
-function normalizeUserData(user) {
-  return {
-    ...user,
-    name: user.name.slice(1), // BUG: cuts off first character
-    id: user.id
-  };
-}
-
-// Original code now pipes through the normalizer
-const displayUser = normalizeUserData(rawUser);
-\`\`\`
-
-FOR HIGH STRESS - Add 2-4 chained transformation functions (data pipeline):
-- Create a pipeline where data flows: raw → validate → normalize → format → transform → display
-- Each function should look "reasonable" but one contains the bug
-- Add realistic-looking comments like "// TODO: refactor this" or "// Legacy - do not remove"
-- The functions should have plausible names that suggest they serve a purpose
-
-Example pattern for HIGH:
-\`\`\`
-// Data processing pipeline (added during Q3 refactor)
-const processItems = (items) => {
-  return items
-    .map(validateItem)
-    .map(normalizeItem)
-    .filter(isValidItem)
-    .map(formatForDisplay);
-};
-
-function validateItem(item) { /* looks fine */ return item; }
-function normalizeItem(item) { 
-  // Standardize IDs across system
-  const baseId = items[0]?.id || item.id; // BUG: uses first item's ID for ALL items
-  return { ...item, id: baseId };
-}
-function isValidItem(item) { return item.status !== 'deleted'; }
-function formatForDisplay(item) { /* looks fine */ return item; }
-\`\`\`
-
-The goal is to make the developer trace through multiple functions to find where the data gets corrupted. This mimics real-world debugging of legacy systems with accumulated technical debt.
 
 Here is the code to modify:
 
@@ -270,32 +338,15 @@ Respond with ONLY a JSON object in this exact format (no markdown, no explanatio
   "symptoms": ["Detailed bug report 1", "Detailed bug report 2"]
 }
 
-IMPORTANT about "symptoms": These should be written like DETAILED bug reports from a QA tester or team member. Each symptom should be a mini bug report that gives enough context to reproduce and investigate the issue. Include:
-- What action was being performed
-- What was expected to happen
-- What actually happened instead
-- Any relevant context (e.g., specific data, conditions, or state)
+IMPORTANT about "symptoms": Write these like bug reports from a QA tester who sees the UI, not the code:
+- Format: "[Location/Action]: [What went wrong]. Expected [X] but got [Y]."
+- Do NOT mention variable names, function names, or line numbers
+- Describe what the user SEES, not what the code does
+- Symptoms MUST describe CLEAR, VISIBLE failures that happen 100% of the time
+- Examples: "All prices show $0.00", "Last 2 items are missing", "App crashes with white screen", "Names appear backwards"
+- DO NOT write symptoms like "app is slower" or "sometimes fails" - these are not clear enough
 
-Format each symptom as: "[Action/Context]: [What went wrong]. Expected [X] but got [Y]."
-
-Examples of GOOD detailed symptoms (HIGHLY VISIBLE bugs):
-- "In the search bar: The first letter of my search is being cut off. I typed 'Apple' but it searches for 'pple'. Every search term loses its first character."
-- "On the product list page: The last 2 items are completely missing. We have 10 products but only 8 show up. Scrolling to the end, items 9 and 10 are nowhere to be found."
-- "In the user cards: Every single card shows the same user ID (#1001). All 50 users display 'ID: 1001' even though they should each have unique IDs."
-- "On the dashboard: All the user names are showing as 'undefined'. The email and avatar load fine but where the name should be it just says 'undefined'."
-- "After loading the orders page: App crashes with white screen. Something about 'Cannot read property of null'. Looks like order data is being deleted before it's displayed."
-- "In the item list: Half the items are completely blank. Items 1, 3, 5, 7 show correctly but items 2, 4, 6, 8 are empty cards with no content."
-- "On the pricing page: All prices show $0.00. We have items ranging from $10-$500 but every single one displays as $0.00."
-- "In the data table: The 'Status' column shows the wrong status for every row. Items marked 'Active' in the database show as 'Inactive' and vice versa."
-- "When viewing comments: Every comment shows the exact same text - the first comment's text is repeated for all 20 comments."
-- "On the counter display: It shows '3 items' but there are clearly 5 items visible on screen. The count is always 2 less than the actual number."
-
-Do NOT mention specific variable names, function names, or line numbers. Describe from a tester's perspective who can see the UI and behavior but not the code.
-
-IMPORTANT: Symptoms must describe REPRODUCIBLE issues - bugs that happen every single time under the described conditions. Do NOT write symptoms like "sometimes works" or "intermittently fails". The bug should be 100% reproducible.
-
-The modifiedCode must be the COMPLETE file content with your bugs inserted. Do not truncate or summarize.
-You CAN add new functions, helpers, or code - not just modify existing code. If you add a helper function, make sure to actually USE it somewhere in the existing code so the bug manifests.`;
+The modifiedCode must be the COMPLETE file content. Do not truncate or summarize.`;
 
   try {
     const { text } = await generateText({
@@ -306,24 +357,28 @@ You CAN add new functions, helpers, or code - not just modify existing code. If 
     // Parse the response
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
-      throw new Error("Failed to parse AI response");
+      throw new AIStressError("Failed to parse AI response - no JSON found in output");
     }
 
     const parsed = JSON.parse(jsonMatch[0]);
     
     if (!parsed.modifiedCode || !parsed.changes) {
-      throw new Error("Invalid AI response structure");
+      throw new AIStressError("Invalid AI response structure - missing modifiedCode or changes");
     }
 
     return {
       content: parsed.modifiedCode,
       changes: parsed.changes,
-      symptoms: parsed.symptoms || generateFallbackSymptoms(parsed.changes),
+      symptoms: parsed.symptoms || selectedBugs.map(b => b.sampleSymptom),
     };
   } catch (error) {
-    console.error("AI stress generation failed:", error);
-    // Fallback to basic stress if AI fails
-    return fallbackStress(content, filename, context, stressLevel, targetBugCount);
+    if (error instanceof AIStressError) {
+      throw error;
+    }
+    throw new AIStressError(
+      "AI stress generation failed. Please check your API key and try again.",
+      error
+    );
   }
 }
 
@@ -367,314 +422,3 @@ function shuffleArray<T>(array: T[]): T[] {
   }
   return array;
 }
-
-/**
- * Represents a stress mutation that can be applied to code.
- */
-interface StressMutation {
-  name: string;
-  /** Check if this mutation can be applied */
-  canApply: (content: string) => boolean;
-  /** Apply the mutation and return the modified content */
-  apply: (content: string) => string;
-  /** Description of what the mutation does */
-  description: string;
-}
-
-/**
- * Fallback stress function if AI is unavailable.
- * Randomly selects and applies mutations based on stress level.
- * 
- * @param content - Original file content
- * @param filename - Name of the file being modified
- * @param _context - Optional context (unused in fallback, but accepted for API compatibility)
- * @param stressLevel - Stress level determines number of bugs to apply
- * @param targetBugCount - Optional specific number of bugs to introduce (overrides stress level bug count)
- * @returns Modified content, list of changes made, and user-facing symptoms
- */
-function fallbackStress(content: string, filename: string, _context?: string, stressLevel: StressLevel = "medium", targetBugCount?: number): { content: string; changes: string[]; symptoms: string[] } {
-  const changes: string[] = [];
-  let modifiedContent = content;
-  const ext = filename.split(".").pop()?.toLowerCase();
-  
-  // Get bug count based on stress level
-  const config = STRESS_CONFIGS[stressLevel];
-  
-  // Define all possible mutations for TypeScript/JavaScript
-  // PRIORITY: High-impact, visually noticeable bugs first
-  const jsMutations: StressMutation[] = [
-    // === HIGH IMPACT: String/Text Corruption ===
-    {
-      name: "sliceOffFirstChar",
-      canApply: (c) => /\.\w+\s*[,\)\}]/.test(c) && /name|title|label|text|value|query|search|input/i.test(c),
-      apply: (c) => {
-        // Find a string property and slice off first character
-        const match = c.match(/(\.\w*(name|title|label|text|value|query|search|input)\w*)/i);
-        if (match) {
-          return c.replace(match[1], match[1] + ".slice(1)");
-        }
-        return c;
-      },
-      description: "Added .slice(1) to a text field, cutting off the first character",
-    },
-    {
-      name: "sliceOffLastChars",
-      canApply: (c) => /\.\w+\s*[,\)\}]/.test(c) && /name|title|label|text|description/i.test(c),
-      apply: (c) => {
-        const match = c.match(/(\.\w*(name|title|label|text|description)\w*)/i);
-        if (match) {
-          return c.replace(match[1], match[1] + ".slice(0, -3)");
-        }
-        return c;
-      },
-      description: "Added .slice(0, -3) to a text field, cutting off the last 3 characters",
-    },
-
-    // === HIGH IMPACT: Data Disappearing ===
-    {
-      name: "hideLastItems",
-      canApply: (c) => /\.map\s*\(/.test(c),
-      apply: (c) => c.replace(/\.map\s*\(/, ".slice(0, -2).map("),
-      description: "Added .slice(0, -2) before .map(), hiding the last 2 items",
-    },
-    {
-      name: "filterOutHalfItems",
-      canApply: (c) => /\.map\s*\(/.test(c) && !/\.filter\s*\(/.test(c),
-      apply: (c) => c.replace(/\.map\s*\(/, ".filter((_, i) => i % 2 === 0).map("),
-      description: "Added filter that only shows every other item (even indices)",
-    },
-    {
-      name: "returnEmptyArray",
-      canApply: (c) => /return\s+\w+\.map\s*\(/.test(c),
-      apply: (c) => c.replace(/return\s+(\w+)\.map\s*\(/, "return []; $1.map("),
-      description: "Return empty array before the actual mapped data",
-    },
-
-    // === HIGH IMPACT: All Items Same Value ===
-    {
-      name: "useFirstIdForAll",
-      canApply: (c) => /\.map\s*\(\s*\(\s*(\w+)/.test(c) && /\.id|\.key|\.uuid/i.test(c),
-      apply: (c) => {
-        const itemMatch = c.match(/\.map\s*\(\s*\(\s*(\w+)/);
-        if (itemMatch) {
-          const itemVar = itemMatch[1];
-          // Find the array being mapped
-          const arrayMatch = c.match(/(\w+)\.map\s*\(/);
-          if (arrayMatch) {
-            const arrayName = arrayMatch[1];
-            // Replace item.id with array[0].id
-            return c.replace(new RegExp(`${itemVar}\\.id`, 'g'), `${arrayName}[0].id`);
-          }
-        }
-        return c;
-      },
-      description: "Changed to use first item's ID for all items (all IDs now identical)",
-    },
-
-    // === HIGH IMPACT: Data Showing as Undefined ===
-    {
-      name: "wrongPropertyName",
-      canApply: (c) => /\.(name|title|email|username)\b/.test(c),
-      apply: (c) => {
-        const props = ['name', 'title', 'email', 'username'];
-        for (const prop of props) {
-          if (c.includes(`.${prop}`)) {
-            const typo = prop.slice(0, -1); // Remove last char: name -> nam
-            return c.replace(new RegExp(`\\.${prop}\\b`), `.${typo}`);
-          }
-        }
-        return c;
-      },
-      description: "Typo in property name causes undefined (e.g., .name → .nam)",
-    },
-    {
-      name: "setPropertyToNull",
-      canApply: (c) => /const\s+\w+\s*=\s*\{/.test(c),
-      apply: (c) => {
-        // Find an object and set a visible property to null
-        const match = c.match(/(const\s+\w+\s*=\s*\{[^}]*)(name|title|value|data):\s*[^,}]+/);
-        if (match) {
-          return c.replace(match[0], match[1] + match[2] + ": null");
-        }
-        return c;
-      },
-      description: "Set a key property to null, causing undefined display",
-    },
-
-    // === HIGH IMPACT: Null Pointer / Crash ===
-    {
-      name: "removeOptionalChaining",
-      canApply: (c) => c.includes("?."),
-      apply: (c) => c.replace(/\?\./g, "."),
-      description: "Removed all optional chaining (?. → .) causing null pointer crashes",
-    },
-    {
-      name: "deletePropertyBeforeUse",
-      canApply: (c) => /const\s+(\w+)\s*=\s*\{/.test(c) && /\.name|\.data|\.items/.test(c),
-      apply: (c) => {
-        const objMatch = c.match(/const\s+(\w+)\s*=\s*\{/);
-        if (objMatch) {
-          const objName = objMatch[1];
-          // Add delete statement after the object
-          return c.replace(objMatch[0], objMatch[0]).replace(
-            new RegExp(`(const\\s+${objName}\\s*=\\s*\\{[^}]+\\};?)`),
-            `$1\ndelete ${objName}.data;`
-          );
-        }
-        return c;
-      },
-      description: "Deleted a property from object before it's accessed",
-    },
-
-    // === HIGH IMPACT: Calculation/Count Bugs ===
-    {
-      name: "wrongLengthCount",
-      canApply: (c) => /\.length\b/.test(c) && !/\.length\s*[-+]/.test(c),
-      apply: (c) => c.replace(/\.length\b/, ".length - 2"),
-      description: "Changed .length to .length - 2, showing wrong item count",
-    },
-    {
-      name: "returnZeroPrice",
-      canApply: (c) => /price|total|amount|cost|sum/i.test(c) && /return\s+\w+/.test(c),
-      apply: (c) => {
-        const match = c.match(/return\s+(\w*(price|total|amount|cost|sum)\w*)/i);
-        if (match) {
-          return c.replace(match[0], "return 0");
-        }
-        return c;
-      },
-      description: "Return 0 instead of calculated price/total",
-    },
-
-    // === HIGH IMPACT: Map/forEach swap ===
-    {
-      name: "mapToForEach",
-      canApply: (c) => /\.map\s*\(/.test(c) && /return.*\.map/.test(c),
-      apply: (c) => c.replace(/\.map\s*\(/, ".forEach("),
-      description: "Changed .map() to .forEach() - returns undefined instead of array",
-    },
-
-    // === MEDIUM IMPACT: Conditional/Logic bugs ===
-    {
-      name: "invertConditionalDisplay",
-      canApply: (c) => /\?\s*</.test(c) || /&&\s*</.test(c),
-      apply: (c) => {
-        // Invert conditional rendering
-        if (c.includes("? <")) {
-          return c.replace(/(\w+)\s*\?\s*</, "!$1 ? <");
-        }
-        if (c.includes("&& <")) {
-          return c.replace(/(\w+)\s*&&\s*</, "!$1 && <");
-        }
-        return c;
-      },
-      description: "Inverted conditional rendering - shows when should hide, hides when should show",
-    },
-    {
-      name: "returnUndefinedFromFunction",
-      canApply: (c) => /function\s+\w+|const\s+\w+\s*=\s*\([^)]*\)\s*=>/.test(c),
-      apply: (c) => {
-        // Add early return undefined at start of function
-        const match = c.match(/(function\s+\w+[^{]*\{|const\s+\w+\s*=\s*\([^)]*\)\s*=>\s*\{)/);
-        if (match) {
-          return c.replace(match[0], match[0] + "\n  return undefined;");
-        }
-        return c;
-      },
-      description: "Added early return undefined, function returns nothing",
-    },
-
-    // === LOWER PRIORITY: Operator bugs (only if needed) ===
-    {
-      name: "offByOneLessThan",
-      canApply: (c) => /for\s*\([^;]+;\s*\w+\s*<\s*\w+/.test(c),
-      apply: (c) => {
-        const match = c.match(/for\s*\([^;]+;\s*\w+\s*<\s*\w+/);
-        return match ? c.replace(match[0], match[0].replace(" < ", " <= ")) : c;
-      },
-      description: "Changed loop boundary from < to <= (off-by-one, may process extra item)",
-    },
-    {
-      name: "zeroToOne",
-      canApply: (c) => /\[\s*0\s*\]/.test(c),
-      apply: (c) => c.replace(/\[\s*0\s*\]/, "[1]"),
-      description: "Changed array index from [0] to [1], skipping first item",
-    },
-    {
-      name: "removeAwait",
-      canApply: (c) => /await\s+\w+\(/.test(c),
-      apply: (c) => {
-        const match = c.match(/await\s+\w+\(/);
-        return match ? c.replace(match[0], match[0].replace("await ", "")) : c;
-      },
-      description: "Removed 'await' keyword - data shows as [object Promise] or undefined",
-    },
-  ];
-
-  // Generic mutations that work for any language - prioritizing visible impact
-  const genericMutations: StressMutation[] = [
-    {
-      name: "genericReturnNull",
-      canApply: (c) => /return\s+\w+/.test(c),
-      apply: (c) => c.replace(/return\s+\w+/, "return null"),
-      description: "Changed return value to null - data shows as null/empty",
-    },
-    {
-      name: "genericReturnEmptyString",
-      canApply: (c) => /return\s+["'`]/.test(c),
-      apply: (c) => c.replace(/return\s+["'`][^"'`]*["'`]/, 'return ""'),
-      description: "Changed return value to empty string - text displays as blank",
-    },
-    {
-      name: "genericTrueToFalse",
-      canApply: (c) => c.includes("true"),
-      apply: (c) => c.replace("true", "false"),
-      description: "Changed 'true' to 'false' - affects visibility/display logic",
-    },
-    {
-      name: "genericFalseToTrue",
-      canApply: (c) => c.includes("false"),
-      apply: (c) => c.replace("false", "true"),
-      description: "Changed 'false' to 'true' - affects visibility/display logic",
-    },
-  ];
-
-  // Select mutations based on file type
-  let availableMutations: StressMutation[];
-  if (["ts", "tsx", "js", "jsx"].includes(ext || "")) {
-    availableMutations = jsMutations;
-  } else {
-    availableMutations = genericMutations;
-  }
-
-  // Filter to only applicable mutations
-  const applicableMutations = availableMutations.filter(m => m.canApply(modifiedContent));
-
-  // Shuffle and pick random mutations based on difficulty
-  shuffleArray(applicableMutations);
-  // Use targetBugCount if provided, otherwise calculate from stress level config
-  const bugCount = targetBugCount !== undefined 
-    ? targetBugCount 
-    : Math.floor(Math.random() * (config.bugCountMax - config.bugCountMin + 1)) + config.bugCountMin;
-  
-  for (const mutation of applicableMutations) {
-    if (changes.length >= bugCount) break;
-    
-    // Double-check mutation can still be applied (content may have changed)
-    if (mutation.canApply(modifiedContent)) {
-      const newContent = mutation.apply(modifiedContent);
-      if (newContent !== modifiedContent) {
-        modifiedContent = newContent;
-        changes.push(mutation.description);
-      }
-    }
-  }
-
-  // Last resort if no changes could be made
-  if (changes.length === 0) {
-    changes.push("No automatic changes could be applied - file may need manual review");
-  }
-
-  return { content: modifiedContent, changes, symptoms: generateFallbackSymptoms(changes) };
-}
-

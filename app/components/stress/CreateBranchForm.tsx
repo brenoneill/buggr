@@ -6,7 +6,7 @@ import { StressLevelSelector } from "./StressLevelSelector";
 import { LoadingProgress, type LoadingStep } from "./LoadingProgress";
 import { CloseIcon, LightningIcon } from "@/app/components/icons";
 
-type StressLevel = "low" | "medium" | "high";
+type StressLevel = "low" | "medium" | "high" | "custom";
 
 interface CreateBranchFormProps {
   /**
@@ -41,6 +41,26 @@ interface CreateBranchFormProps {
    * Callback when stress level changes.
    */
   onStressLevelChange: (level: StressLevel) => void;
+  /**
+   * Custom number of files to stress (only used when stressLevel is "custom").
+   */
+  customFilesCount?: number;
+  /**
+   * Callback when custom files count changes.
+   */
+  onCustomFilesCountChange?: (count: number) => void;
+  /**
+   * Custom total number of bugs to introduce (only used when stressLevel is "custom").
+   */
+  customBugCount?: number;
+  /**
+   * Callback when custom bug count changes.
+   */
+  onCustomBugCountChange?: (count: number) => void;
+  /**
+   * Maximum number of files available to stress.
+   */
+  maxFilesAvailable?: number;
   /**
    * Whether the form is currently submitting.
    */
@@ -85,6 +105,11 @@ export function CreateBranchForm({
   onStressContextChange,
   stressLevel,
   onStressLevelChange,
+  customFilesCount = 1,
+  onCustomFilesCountChange,
+  customBugCount = 1,
+  onCustomBugCountChange,
+  maxFilesAvailable = 1,
   isLoading,
   loadingStep,
   loadingSteps,
@@ -129,6 +154,52 @@ export function CreateBranchForm({
         onChange={onStressLevelChange}
         disabled={isLoading}
       />
+
+      {/* Custom stress settings */}
+      {stressLevel === "custom" && (
+        <div className="flex flex-col gap-3 rounded-lg border border-gh-border bg-gh-canvas-subtle p-3">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-medium text-gh-text-muted">
+              Number of files to stress
+            </label>
+            <input
+              type="number"
+              min="1"
+              max={maxFilesAvailable}
+              value={customFilesCount}
+              onChange={(e) => {
+                const value = Math.max(1, Math.min(maxFilesAvailable, parseInt(e.target.value) || 1));
+                onCustomFilesCountChange?.(value);
+              }}
+              className="w-full rounded-lg border border-gh-border bg-gh-canvas px-3 py-2 text-sm text-white focus:border-gh-accent focus:outline-none focus:ring-1 focus:ring-gh-accent"
+              disabled={isLoading}
+            />
+            <p className="text-xs text-gh-text-subtle">
+              Max {maxFilesAvailable} file{maxFilesAvailable !== 1 ? "s" : ""} available
+            </p>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-medium text-gh-text-muted">
+              Total number of bugs (across all files)
+            </label>
+            <input
+              type="number"
+              min="1"
+              max="20"
+              value={customBugCount}
+              onChange={(e) => {
+                const value = Math.max(1, Math.min(20, parseInt(e.target.value) || 1));
+                onCustomBugCountChange?.(value);
+              }}
+              className="w-full rounded-lg border border-gh-border bg-gh-canvas px-3 py-2 text-sm text-white focus:border-gh-accent focus:outline-none focus:ring-1 focus:ring-gh-accent"
+              disabled={isLoading}
+            />
+            <p className="text-xs text-gh-text-subtle">
+              Total bugs distributed across all selected files
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Optional stress context */}
       <div className="flex flex-col gap-1.5">

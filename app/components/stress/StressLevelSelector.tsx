@@ -1,6 +1,6 @@
 "use client";
 
-type StressLevel = "low" | "medium" | "high";
+type StressLevel = "low" | "medium" | "high" | "custom";
 
 interface StressLevelSelectorProps {
   /**
@@ -21,20 +21,26 @@ const levelConfig = {
   low: {
     emoji: "🌱",
     label: "Low",
-    description: "1-2 straightforward bugs, easier to spot",
+    description: "1 file, 2 bugs total",
     activeClass: "bg-gh-success text-white",
   },
   medium: {
     emoji: "🔥",
     label: "Medium",
-    description: "2-3 subtle bugs, requires careful review",
+    description: "2 files, 4 bugs total",
     activeClass: "bg-gh-warning text-white",
   },
   high: {
     emoji: "💀",
     label: "High",
-    description: "2-3 devious bugs, requires deep debugging",
+    description: "3 files, 6 bugs total",
     activeClass: "bg-gh-danger text-white",
+  },
+  custom: {
+    emoji: "⚙️",
+    label: "Custom",
+    description: "Choose your own files and bugs",
+    activeClass: "bg-gh-accent text-white",
   },
 };
 
@@ -50,7 +56,7 @@ export function StressLevelSelector({ value, onChange, disabled }: StressLevelSe
     <div className="flex flex-col gap-1.5">
       <label className="text-xs font-medium text-gh-text-muted">Stress Level</label>
       <div className="flex rounded-lg border border-gh-border bg-gh-canvas p-1">
-        {(["low", "medium", "high"] as const).map((level) => {
+        {(["low", "medium", "high", "custom"] as const).map((level) => {
           const config = levelConfig[level];
           const isActive = value === level;
 
