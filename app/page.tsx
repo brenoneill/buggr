@@ -325,8 +325,14 @@ export default async function Home() {
                 <li className="flex items-center gap-2">
                   <span className="text-gh-success-fg">✓</span> A GitHub account
                 </li>
-                <li className="flex items-center gap-2">
-                  <span className="text-gh-success-fg">✓</span> An Anthropic API key
+                <li className="flex items-start gap-2">
+                  <span className="text-gh-success-fg">✓</span>
+                  <span>
+                    An LLM provider — <span className="text-gh-accent">Anthropic</span> (recommended), OpenAI, or a local LLM
+                    <span className="block text-xs text-gh-text-muted/70">
+                      Anthropic is most robustly tested. Local requires a capable machine.
+                    </span>
+                  </span>
                 </li>
               </ul>
             </div>
