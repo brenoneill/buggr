@@ -37,18 +37,18 @@ function resolveAIProvider(): AIProvider {
  */
 async function createLanguageModel(): Promise<LanguageModel> {
   const provider = resolveAIProvider();
-  
+  console.log("Using AI provider:", provider);
   switch (provider) {
     case "ollama": {
-      // Ollama uses the OpenAI-compatible interface via @ai-sdk/openai
+      // Ollama uses @ai-sdk/openai-compatible for proper AI SDK 5 support
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let createOpenAI: any;
+      let createOpenAICompatible: any;
       try {
-        const openaiModule = await import("@ai-sdk/openai");
-        createOpenAI = openaiModule.createOpenAI;
+        const compatModule = await import("@ai-sdk/openai-compatible");
+        createOpenAICompatible = compatModule.createOpenAICompatible;
       } catch (error) {
         throw new AIStressError(
-          "OpenAI SDK not available for Ollama. Please ensure @ai-sdk/openai is installed.",
+          "OpenAI Compatible SDK not available for Ollama. Please ensure @ai-sdk/openai-compatible is installed.",
           error
         );
       }
@@ -56,24 +56,55 @@ async function createLanguageModel(): Promise<LanguageModel> {
       const baseURL = process.env.OLLAMA_BASE_URL || "http://localhost:11434/v1";
       const model = process.env.OLLAMA_MODEL || "llama3";
       
-      const ollama = createOpenAI({
+      console.log(`Ollama config: baseURL=${baseURL}, model=${model}`);
+      
+      // Verify Ollama is reachable before creating the model
+      try {
+        const healthCheck = await fetch(`${baseURL.replace('/v1', '')}/api/tags`, {
+          method: 'GET',
+          signal: AbortSignal.timeout(5000),
+        });
+        if (!healthCheck.ok) {
+          console.warn(`Ollama health check returned status ${healthCheck.status}`);
+        } else {
+          const data = await healthCheck.json();
+          const availableModels = data.models?.map((m: { name: string }) => m.name) || [];
+          console.log(`Ollama available models: ${availableModels.join(', ') || 'none'}`);
+          
+          // Check if requested model is available
+          const modelBase = model.split(':')[0];
+          const hasModel = availableModels.some((m: string) => m.startsWith(modelBase));
+          if (!hasModel) {
+            console.warn(`WARNING: Model "${model}" may not be available. Available: ${availableModels.join(', ')}`);
+            console.warn(`Run 'ollama pull ${model}' to download the model first.`);
+          }
+        }
+      } catch (healthError) {
+        console.warn(`Could not reach Ollama at ${baseURL}:`, healthError instanceof Error ? healthError.message : healthError);
+        console.warn(`Make sure Ollama is running with 'ollama serve' or the Ollama app is open.`);
+      }
+      
+      const ollama = createOpenAICompatible({
+        name: "ollama",
         baseURL,
-        apiKey: "ollama", // Ollama doesn't need a real key but the SDK requires one
+        headers: {
+          Authorization: "Bearer ollama", // Ollama doesn't need a real key
+        },
       });
       
-      return ollama(model);
+      return ollama.chatModel(model);
     }
     
     case "openai-compatible": {
       // Generic OpenAI-compatible servers (LM Studio, LocalAI, vLLM, etc.)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let createOpenAI: any;
+      let createOpenAICompatible: any;
       try {
-        const openaiModule = await import("@ai-sdk/openai");
-        createOpenAI = openaiModule.createOpenAI;
+        const compatModule = await import("@ai-sdk/openai-compatible");
+        createOpenAICompatible = compatModule.createOpenAICompatible;
       } catch (error) {
         throw new AIStressError(
-          "OpenAI SDK not available. Please ensure @ai-sdk/openai is installed.",
+          "OpenAI Compatible SDK not available. Please ensure @ai-sdk/openai-compatible is installed.",
           error
         );
       }
@@ -88,12 +119,15 @@ async function createLanguageModel(): Promise<LanguageModel> {
       const model = process.env.OPENAI_COMPATIBLE_MODEL || "default";
       const apiKey = process.env.OPENAI_COMPATIBLE_API_KEY || "not-needed";
       
-      const openaiCompatible = createOpenAI({
+      const openaiCompatible = createOpenAICompatible({
+        name: "openai-compatible",
         baseURL,
-        apiKey,
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+        },
       });
       
-      return openaiCompatible(model);
+      return openaiCompatible.chatModel(model);
     }
     
     case "anthropic":
@@ -450,22 +484,65 @@ IMPORTANT about "symptoms": Write these like bug reports from a QA tester who se
 The modifiedCode must be the COMPLETE file content. Do not truncate or summarize.`;
 
   try {
-    const { text } = await generateText({
+    console.log(`Calling AI model with prompt length: ${prompt.length} characters`);
+    const startTime = Date.now();
+    
+    const { text, finishReason, usage } = await generateText({
       model,
       prompt,
     });
+    
+    const duration = Date.now() - startTime;
+    console.log(`AI response received in ${duration}ms`);
+    console.log(`Finish reason: ${finishReason}, Usage:`, usage);
+    console.log(`Response length: ${text?.length || 0} characters`);
+    
+    // Debug: log first 500 chars of response for troubleshooting
+    if (text) {
+      console.log(`Response preview: ${text.substring(0, 500)}...`);
+    } else {
+      console.log("WARNING: AI returned empty response");
+    }
+
+    // Check for empty or very short responses (common with Ollama misconfiguration)
+    if (!text || text.trim().length < 50) {
+      throw new AIStressError(
+        `AI returned empty or insufficient response (${text?.length || 0} chars). ` +
+        `This often means the model didn't understand the prompt or isn't loaded correctly. ` +
+        `For Ollama: ensure the model is running with 'ollama run <model>' first.`
+      );
+    }
 
     // Parse the response
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
-      throw new AIStressError("Failed to parse AI response - no JSON found in output");
+      console.error("Full AI response (no JSON found):", text);
+      throw new AIStressError(
+        `Failed to parse AI response - no JSON found in output. ` +
+        `Response started with: "${text.substring(0, 200)}..."`
+      );
     }
 
-    const parsed = JSON.parse(jsonMatch[0]);
+    let parsed;
+    try {
+      parsed = JSON.parse(jsonMatch[0]);
+    } catch (parseError) {
+      console.error("JSON parse error. Matched JSON:", jsonMatch[0].substring(0, 500));
+      throw new AIStressError(
+        `Failed to parse JSON from AI response: ${parseError instanceof Error ? parseError.message : 'Unknown parse error'}`,
+        parseError
+      );
+    }
     
     if (!parsed.modifiedCode || !parsed.changes) {
-      throw new AIStressError("Invalid AI response structure - missing modifiedCode or changes");
+      console.error("Invalid response structure:", Object.keys(parsed));
+      throw new AIStressError(
+        `Invalid AI response structure - missing modifiedCode or changes. ` +
+        `Got keys: ${Object.keys(parsed).join(', ')}`
+      );
     }
+
+    console.log(`Successfully parsed AI response with ${parsed.changes.length} changes`);
 
     return {
       content: parsed.modifiedCode,
@@ -476,8 +553,10 @@ The modifiedCode must be the COMPLETE file content. Do not truncate or summarize
     if (error instanceof AIStressError) {
       throw error;
     }
+    console.error("AI stress generation error:", error);
     throw new AIStressError(
-      "AI stress generation failed. Please check your API key and try again.",
+      `AI stress generation failed: ${error instanceof Error ? error.message : 'Unknown error'}. ` +
+      `Please check your configuration and try again.`,
       error
     );
   }
