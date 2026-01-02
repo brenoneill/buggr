@@ -25,7 +25,7 @@ When the AI-generated code breaks (and it will), can your team debug it? Or are 
 1. **Connect your GitHub account** — stresst uses OAuth to access your repositories
 2. **Select a repository and branch** — choose the code you want to stress
 3. **Pick a commit** — select which files to introduce bugs into
-4. **Configure stress level** — Low (1-2 bugs), Medium (2-3 bugs), or High (3-5 bugs)
+4. **Configure stress level** — Low (2 bugs 1 file), Medium (4 bugs 2 files), or High (6 bugs 3 files)
 5. **Create stressed branch** — AI analyzes your code and introduces realistic bugs
 6. **Share with your team** — send the bug report to a colleague to debug
 
