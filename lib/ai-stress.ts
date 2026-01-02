@@ -1,8 +1,119 @@
-import { generateText } from "ai";
+import { generateText, LanguageModel } from "ai";
 import { BugType, BUG_TYPES } from "./bug-types";
 
 /** Stress level configuration */
 type StressLevel = "low" | "medium" | "high";
+
+/** Supported AI providers */
+type AIProvider = "anthropic" | "ollama" | "openai-compatible";
+
+/**
+ * Resolves the AI provider to use based on environment variables.
+ * Priority: AI_PROVIDER env var > auto-detect based on available keys > anthropic
+ * 
+ * @returns The configured AI provider
+ */
+function resolveAIProvider(): AIProvider {
+  const explicitProvider = process.env.AI_PROVIDER?.toLowerCase();
+  
+  if (explicitProvider === "ollama") return "ollama";
+  if (explicitProvider === "openai-compatible") return "openai-compatible";
+  if (explicitProvider === "anthropic") return "anthropic";
+  
+  // Auto-detect based on available configuration
+  if (process.env.OLLAMA_MODEL) return "ollama";
+  if (process.env.OPENAI_COMPATIBLE_BASE_URL) return "openai-compatible";
+  
+  // Default to Anthropic
+  return "anthropic";
+}
+
+/**
+ * Creates the appropriate language model based on the configured provider.
+ * Supports Anthropic (default), Ollama, and OpenAI-compatible local servers.
+ * 
+ * @returns Language model instance for the configured provider
+ * @throws AIStressError if the provider dependencies are not available
+ */
+async function createLanguageModel(): Promise<LanguageModel> {
+  const provider = resolveAIProvider();
+  
+  switch (provider) {
+    case "ollama": {
+      // Ollama uses the OpenAI-compatible interface via @ai-sdk/openai
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let createOpenAI: any;
+      try {
+        const openaiModule = await import("@ai-sdk/openai");
+        createOpenAI = openaiModule.createOpenAI;
+      } catch (error) {
+        throw new AIStressError(
+          "OpenAI SDK not available for Ollama. Please ensure @ai-sdk/openai is installed.",
+          error
+        );
+      }
+      
+      const baseURL = process.env.OLLAMA_BASE_URL || "http://localhost:11434/v1";
+      const model = process.env.OLLAMA_MODEL || "llama3";
+      
+      const ollama = createOpenAI({
+        baseURL,
+        apiKey: "ollama", // Ollama doesn't need a real key but the SDK requires one
+      });
+      
+      return ollama(model);
+    }
+    
+    case "openai-compatible": {
+      // Generic OpenAI-compatible servers (LM Studio, LocalAI, vLLM, etc.)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let createOpenAI: any;
+      try {
+        const openaiModule = await import("@ai-sdk/openai");
+        createOpenAI = openaiModule.createOpenAI;
+      } catch (error) {
+        throw new AIStressError(
+          "OpenAI SDK not available. Please ensure @ai-sdk/openai is installed.",
+          error
+        );
+      }
+      
+      const baseURL = process.env.OPENAI_COMPATIBLE_BASE_URL;
+      if (!baseURL) {
+        throw new AIStressError(
+          "OPENAI_COMPATIBLE_BASE_URL environment variable is required for openai-compatible provider."
+        );
+      }
+      
+      const model = process.env.OPENAI_COMPATIBLE_MODEL || "default";
+      const apiKey = process.env.OPENAI_COMPATIBLE_API_KEY || "not-needed";
+      
+      const openaiCompatible = createOpenAI({
+        baseURL,
+        apiKey,
+      });
+      
+      return openaiCompatible(model);
+    }
+    
+    case "anthropic":
+    default: {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let anthropic: any;
+      try {
+        const anthropicModule = await import("@ai-sdk/anthropic");
+        anthropic = anthropicModule.anthropic;
+      } catch (error) {
+        throw new AIStressError(
+          "AI SDK not available. Please ensure @ai-sdk/anthropic is installed and ANTHROPIC_API_KEY is set.",
+          error
+        );
+      }
+      
+      return anthropic("claude-sonnet-4-20250514");
+    }
+  }
+}
 
 interface StressConfig {
   bugCount: number;
@@ -250,18 +361,8 @@ export async function introduceAIStress(
   stressLevel: StressLevel = "medium",
   targetBugCount?: number
 ): Promise<{ content: string; changes: string[]; symptoms: string[] }> {
-  // Dynamic import to handle optional dependency
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let anthropic: any;
-  try {
-    const anthropicModule = await import("@ai-sdk/anthropic");
-    anthropic = anthropicModule.anthropic;
-  } catch (error) {
-    throw new AIStressError(
-      "AI SDK not available. Please ensure @ai-sdk/anthropic is installed and ANTHROPIC_API_KEY is set.",
-      error
-    );
-  }
+  // Create the language model based on configured provider
+  const model = await createLanguageModel();
 
   const config = STRESS_CONFIGS[stressLevel];
 
@@ -350,7 +451,7 @@ The modifiedCode must be the COMPLETE file content. Do not truncate or summarize
 
   try {
     const { text } = await generateText({
-      model: anthropic("claude-sonnet-4-20250514"),
+      model,
       prompt,
     });
 

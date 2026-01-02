@@ -62,7 +62,10 @@ Delete stressed branches when you're done to keep your repository clean
 
 - Node.js 18+
 - A GitHub account
-- An Anthropic API key (for AI-powered bug generation)
+- **One of the following for AI bug generation:**
+  - An Anthropic API key (recommended, default)
+  - A local LLM via Ollama (free, no API key needed)
+  - Any OpenAI-compatible local server
 
 ### Environment Variables
 
@@ -79,6 +82,25 @@ AUTH_SECRET=your_random_secret
 # Anthropic API key (get at https://console.anthropic.com)
 ANTHROPIC_API_KEY=your_anthropic_api_key
 ```
+
+### 🦙 Using a Local LLM (Free Alternative)
+
+Don't want to pay for API calls? You can run stresst with a local LLM using Ollama or any OpenAI-compatible server.
+
+**Quick start with Ollama:**
+
+```bash
+# Install additional dependency
+npm install @ai-sdk/openai
+
+# Set environment variables
+export AI_PROVIDER=ollama
+export OLLAMA_MODEL=llama3
+```
+
+**📖 See [docs/LOCAL_LLM_SETUP.md](docs/LOCAL_LLM_SETUP.md) for detailed setup instructions.**
+
+> **Note:** Local LLMs may produce less consistent results than Claude. We recommend using a capable model like Llama 3 70B, CodeLlama 34B, or Mistral Large for best results.
 
 ### GitHub OAuth Setup
 
@@ -165,7 +187,7 @@ To delete a stressed branch:
 
 - **Framework**: Next.js 16 (App Router)
 - **Authentication**: NextAuth.js v5 with GitHub OAuth
-- **AI**: Anthropic Claude (via Vercel AI SDK)
+- **AI**: Anthropic Claude (via Vercel AI SDK) — or local LLMs via Ollama
 - **Styling**: Tailwind CSS
 - **Language**: TypeScript
 
