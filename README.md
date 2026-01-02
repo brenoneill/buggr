@@ -58,11 +58,16 @@ Delete stressed branches when you're done to keep your repository clean
 
 ## Getting Started
 
+> 📖 **New to stresst?** Check out the [step-by-step Getting Started guide](docs/GETTING_STARTED.md) for a complete walkthrough with your own repository.
+
 ### Prerequisites
 
 - Node.js 18+
 - A GitHub account
-- An Anthropic API key (for AI-powered bug generation)
+- **One of the following for AI bug generation:**
+  - An Anthropic API key (recommended, default)
+  - A local LLM via Ollama (free, no API key needed)
+  - Any OpenAI-compatible local server
 
 ### Environment Variables
 
@@ -79,6 +84,25 @@ AUTH_SECRET=your_random_secret
 # Anthropic API key (get at https://console.anthropic.com)
 ANTHROPIC_API_KEY=your_anthropic_api_key
 ```
+
+### 🦙 Using a Local LLM (Free Alternative)
+
+Don't want to pay for API calls? You can run stresst with a local LLM using Ollama or any OpenAI-compatible server.
+
+**Quick start with Ollama:**
+
+```bash
+# Install additional dependency
+npm install @ai-sdk/openai
+
+# Set environment variables
+export AI_PROVIDER=ollama
+export OLLAMA_MODEL=llama3
+```
+
+**📖 See [docs/LOCAL_LLM_SETUP.md](docs/LOCAL_LLM_SETUP.md) for detailed setup instructions.**
+
+> **Note:** Local LLMs may produce less consistent results than Claude. We recommend using a capable model like Llama 3 70B, CodeLlama 34B, or Mistral Large for best results.
 
 ### GitHub OAuth Setup
 
@@ -123,6 +147,28 @@ Open [http://localhost:3000](http://localhost:3000) to get started.
 8. Wait for the AI to introduce bugs
 9. Share the bug report with your team!
 
+### Playing the Game
+
+Once you have a stressed branch to debug:
+
+1. **Clone the stressed branch** to your local machine
+2. **Start the timer** — Make a commit with `start` in the message (e.g., "start debugging")
+3. **Find and fix the bugs** — Review the code, identify issues, and make your fixes
+4. **Stop the timer** — Make a commit with `done`, `complete`, `end`, or `stop` in the message
+5. **Check your score** — Return to stresst and click "Check Score" to see your grade
+
+The scoring system tracks the time between your start and completion commits, then grades you based on the difficulty level:
+
+### 🏆 Scoring System
+
+| Difficulty | A Grade | B Grade | C Grade | D Grade |
+|------------|---------|---------|---------|---------|
+| **🌱 Easy** | 0-5 min | 5-10 min | 10-15 min | 15+ min |
+| **🔥 Medium** | 0-7 min | 7-11 min | 11-15 min | 15+ min |
+| **💀 Hard** | 0-10 min | 10-15 min | 15-20 min | 20+ min |
+
+> **Tip:** The scoring thresholds can be customized in `lib/score-config.ts`
+
 ### Finding the Bugs
 
 Once a stressed branch is created:
@@ -143,7 +189,7 @@ To delete a stressed branch:
 
 - **Framework**: Next.js 16 (App Router)
 - **Authentication**: NextAuth.js v5 with GitHub OAuth
-- **AI**: Anthropic Claude (via Vercel AI SDK)
+- **AI**: Anthropic Claude (via Vercel AI SDK) — or local LLMs via Ollama
 - **Styling**: Tailwind CSS
 - **Language**: TypeScript
 
@@ -161,7 +207,8 @@ stresst/
 │   └── page.tsx           # Home page
 ├── lib/
 │   ├── ai-stress.ts       # AI bug generation logic
-│   └── github.ts          # GitHub API utilities
+│   ├── github.ts          # GitHub API utilities
+│   └── score-config.ts    # Scoring thresholds configuration
 ├── auth.ts                # NextAuth.js configuration
 └── types/                 # TypeScript type definitions
 ```

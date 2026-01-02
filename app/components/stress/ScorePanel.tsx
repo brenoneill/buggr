@@ -4,6 +4,10 @@ import { useEffect, useState } from "react";
 import type { GitHubCommit, StressMetadata } from "@/lib/github";
 import { Button } from "@/app/components/inputs/Button";
 import { TrophyIcon, CloseIcon } from "@/app/components/icons";
+import {
+  calculateScoreRating,
+  DIFFICULTY_CONFIG,
+} from "@/lib/score-config";
 
 interface ScorePanelProps {
   /** The commit where debugging started (contains "start" in message) */
@@ -16,120 +20,6 @@ interface ScorePanelProps {
   onClose: () => void;
   /** Optional stress test metadata from .stresst.json */
   stressMetadata?: StressMetadata | null;
-}
-
-/** Score rating configuration */
-interface ScoreRating {
-  grade: string;
-  label: string;
-  emoji: string;
-  description: string;
-  gradient: string;
-  textColor: string;
-}
-
-/** Time thresholds in minutes for each difficulty level */
-const TIME_THRESHOLDS = {
-  low: { fast: 5, medium: 15 },
-  medium: { fast: 15, medium: 45 },
-  high: { fast: 30, medium: 90 },
-} as const;
-
-/** Score ratings from best to worst */
-const SCORE_RATINGS: Record<string, ScoreRating> = {
-  legendary: {
-    grade: "S",
-    label: "Bug Slayer",
-    emoji: "⚡",
-    description: "Lightning fast! You crushed it.",
-    gradient: "from-purple-500 via-pink-500 to-orange-500",
-    textColor: "text-purple-300",
-  },
-  outstanding: {
-    grade: "A",
-    label: "Outstanding",
-    emoji: "🌟",
-    description: "Exceptional debugging skills!",
-    gradient: "from-amber-400 to-yellow-500",
-    textColor: "text-amber-300",
-  },
-  great: {
-    grade: "B",
-    label: "Great Job",
-    emoji: "🔥",
-    description: "Solid work, well done!",
-    gradient: "from-emerald-600/80 to-teal-600/80",
-    textColor: "text-emerald-400",
-  },
-  good: {
-    grade: "C",
-    label: "Good Work",
-    emoji: "👍",
-    description: "Nice effort, keep improving!",
-    gradient: "from-blue-400 to-cyan-500",
-    textColor: "text-blue-300",
-  },
-  practice: {
-    grade: "D",
-    label: "Keep Practicing",
-    emoji: "💪",
-    description: "You finished! Practice makes perfect.",
-    gradient: "from-slate-400 to-slate-500",
-    textColor: "text-slate-300",
-  },
-};
-
-/**
- * Calculates a score rating based on difficulty, time taken, and bug count.
- *
- * @param difficultyLevel - The stress level (low, medium, high)
- * @param timeMs - Time taken in milliseconds
- * @param bugCount - Number of bugs that were introduced (more = harder)
- * @returns Score rating object
- */
-function calculateScoreRating(
-  difficultyLevel: "low" | "medium" | "high" | undefined,
-  timeMs: number,
-  bugCount?: number
-): ScoreRating {
-  const timeMinutes = timeMs / (1000 * 60);
-  const difficulty = difficultyLevel || "medium";
-  const thresholds = TIME_THRESHOLDS[difficulty];
-
-  // Difficulty bonus: harder = more impressive (0-2 points)
-  const difficultyBonus = difficulty === "high" ? 2 : difficulty === "medium" ? 1 : 0;
-
-  // Bug count bonus: more bugs = more impressive (0-1.5 points)
-  // 1 bug = 0, 2 bugs = 0.5, 3+ bugs = 1, 4+ bugs = 1.5
-  const bugs = bugCount || 1;
-  const bugBonus = bugs >= 4 ? 1.5 : bugs >= 3 ? 1 : bugs >= 2 ? 0.5 : 0;
-
-  // Adjust time thresholds based on bug count (more bugs = more time allowed)
-  const bugTimeMultiplier = 1 + (bugs - 1) * 0.25; // Each extra bug adds 25% more time allowance
-  const adjustedFast = thresholds.fast * bugTimeMultiplier;
-  const adjustedMedium = thresholds.medium * bugTimeMultiplier;
-
-  // Calculate base score from time (1-4 points)
-  let timeScore: number;
-  if (timeMinutes <= adjustedFast) {
-    timeScore = 4; // Very fast
-  } else if (timeMinutes <= adjustedMedium) {
-    timeScore = 3; // Good time
-  } else if (timeMinutes <= adjustedMedium * 2) {
-    timeScore = 2; // Took a while
-  } else {
-    timeScore = 1; // Slow but finished
-  }
-
-  // Combined score (1-7.5 range)
-  const totalScore = timeScore + difficultyBonus + bugBonus;
-
-  // Map to rating (adjusted thresholds for new range)
-  if (totalScore >= 7) return SCORE_RATINGS.legendary;
-  if (totalScore >= 5.5) return SCORE_RATINGS.outstanding;
-  if (totalScore >= 4.5) return SCORE_RATINGS.great;
-  if (totalScore >= 3) return SCORE_RATINGS.good;
-  return SCORE_RATINGS.practice;
 }
 
 /**
@@ -179,13 +69,6 @@ function calculateTimeDifference(
   return { formatted, ms: diffMs };
 }
 
-/** Maps stress level to display configuration */
-const DIFFICULTY_CONFIG = {
-  low: { label: "Easy", color: "text-green-400", bg: "bg-green-500/20" },
-  medium: { label: "Medium", color: "text-yellow-400", bg: "bg-yellow-500/20" },
-  high: { label: "Hard", color: "text-red-400", bg: "bg-red-500/20" },
-} as const;
-
 export function ScorePanel({
   startCommit,
   completeCommit,
@@ -214,8 +97,7 @@ export function ScorePanel({
     : null;
   const scoreRating = calculateScoreRating(
     stressMetadata?.stressLevel,
-    timeMs,
-    stressMetadata?.bugCount
+    timeMs
   );
 
   const bugCount = stressMetadata?.bugCount || 1;

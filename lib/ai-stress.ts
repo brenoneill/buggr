@@ -1,8 +1,153 @@
-import { generateText } from "ai";
+import { generateText, LanguageModel } from "ai";
 import { BugType, BUG_TYPES } from "./bug-types";
 
 /** Stress level configuration */
 type StressLevel = "low" | "medium" | "high";
+
+/** Supported AI providers */
+type AIProvider = "anthropic" | "ollama" | "openai-compatible";
+
+/**
+ * Resolves the AI provider to use based on environment variables.
+ * Priority: AI_PROVIDER env var > auto-detect based on available keys > anthropic
+ * 
+ * @returns The configured AI provider
+ */
+function resolveAIProvider(): AIProvider {
+  const explicitProvider = process.env.AI_PROVIDER?.toLowerCase();
+  
+  if (explicitProvider === "ollama") return "ollama";
+  if (explicitProvider === "openai-compatible") return "openai-compatible";
+  if (explicitProvider === "anthropic") return "anthropic";
+  
+  // Auto-detect based on available configuration
+  if (process.env.OLLAMA_MODEL) return "ollama";
+  if (process.env.OPENAI_COMPATIBLE_BASE_URL) return "openai-compatible";
+  
+  // Default to Anthropic
+  return "anthropic";
+}
+
+/**
+ * Creates the appropriate language model based on the configured provider.
+ * Supports Anthropic (default), Ollama, and OpenAI-compatible local servers.
+ * 
+ * @returns Language model instance for the configured provider
+ * @throws AIStressError if the provider dependencies are not available
+ */
+async function createLanguageModel(): Promise<LanguageModel> {
+  const provider = resolveAIProvider();
+  console.log("Using AI provider:", provider);
+  switch (provider) {
+    case "ollama": {
+      // Ollama uses @ai-sdk/openai-compatible for proper AI SDK 5 support
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let createOpenAICompatible: any;
+      try {
+        const compatModule = await import("@ai-sdk/openai-compatible");
+        createOpenAICompatible = compatModule.createOpenAICompatible;
+      } catch (error) {
+        throw new AIStressError(
+          "OpenAI Compatible SDK not available for Ollama. Please ensure @ai-sdk/openai-compatible is installed.",
+          error
+        );
+      }
+      
+      const baseURL = process.env.OLLAMA_BASE_URL || "http://localhost:11434/v1";
+      const model = process.env.OLLAMA_MODEL || "llama3";
+      
+      console.log(`Ollama config: baseURL=${baseURL}, model=${model}`);
+      
+      // Verify Ollama is reachable before creating the model
+      try {
+        const healthCheck = await fetch(`${baseURL.replace('/v1', '')}/api/tags`, {
+          method: 'GET',
+          signal: AbortSignal.timeout(5000),
+        });
+        if (!healthCheck.ok) {
+          console.warn(`Ollama health check returned status ${healthCheck.status}`);
+        } else {
+          const data = await healthCheck.json();
+          const availableModels = data.models?.map((m: { name: string }) => m.name) || [];
+          console.log(`Ollama available models: ${availableModels.join(', ') || 'none'}`);
+          
+          // Check if requested model is available
+          const modelBase = model.split(':')[0];
+          const hasModel = availableModels.some((m: string) => m.startsWith(modelBase));
+          if (!hasModel) {
+            console.warn(`WARNING: Model "${model}" may not be available. Available: ${availableModels.join(', ')}`);
+            console.warn(`Run 'ollama pull ${model}' to download the model first.`);
+          }
+        }
+      } catch (healthError) {
+        console.warn(`Could not reach Ollama at ${baseURL}:`, healthError instanceof Error ? healthError.message : healthError);
+        console.warn(`Make sure Ollama is running with 'ollama serve' or the Ollama app is open.`);
+      }
+      
+      const ollama = createOpenAICompatible({
+        name: "ollama",
+        baseURL,
+        headers: {
+          Authorization: "Bearer ollama", // Ollama doesn't need a real key
+        },
+      });
+      
+      return ollama.chatModel(model);
+    }
+    
+    case "openai-compatible": {
+      // Generic OpenAI-compatible servers (LM Studio, LocalAI, vLLM, etc.)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let createOpenAICompatible: any;
+      try {
+        const compatModule = await import("@ai-sdk/openai-compatible");
+        createOpenAICompatible = compatModule.createOpenAICompatible;
+      } catch (error) {
+        throw new AIStressError(
+          "OpenAI Compatible SDK not available. Please ensure @ai-sdk/openai-compatible is installed.",
+          error
+        );
+      }
+      
+      const baseURL = process.env.OPENAI_COMPATIBLE_BASE_URL;
+      if (!baseURL) {
+        throw new AIStressError(
+          "OPENAI_COMPATIBLE_BASE_URL environment variable is required for openai-compatible provider."
+        );
+      }
+      
+      const model = process.env.OPENAI_COMPATIBLE_MODEL || "default";
+      const apiKey = process.env.OPENAI_COMPATIBLE_API_KEY || "not-needed";
+      
+      const openaiCompatible = createOpenAICompatible({
+        name: "openai-compatible",
+        baseURL,
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+        },
+      });
+      
+      return openaiCompatible.chatModel(model);
+    }
+    
+    case "anthropic":
+    default: {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let anthropic: any;
+      try {
+        const anthropicModule = await import("@ai-sdk/anthropic");
+        anthropic = anthropicModule.anthropic;
+      } catch (error) {
+        throw new AIStressError(
+          "AI SDK not available. Please ensure @ai-sdk/anthropic is installed and ANTHROPIC_API_KEY is set.",
+          error
+        );
+      }
+      
+      return anthropic("claude-sonnet-4-20250514");
+    }
+  }
+}
 
 interface StressConfig {
   bugCount: number;
@@ -250,18 +395,8 @@ export async function introduceAIStress(
   stressLevel: StressLevel = "medium",
   targetBugCount?: number
 ): Promise<{ content: string; changes: string[]; symptoms: string[] }> {
-  // Dynamic import to handle optional dependency
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let anthropic: any;
-  try {
-    const anthropicModule = await import("@ai-sdk/anthropic");
-    anthropic = anthropicModule.anthropic;
-  } catch (error) {
-    throw new AIStressError(
-      "AI SDK not available. Please ensure @ai-sdk/anthropic is installed and ANTHROPIC_API_KEY is set.",
-      error
-    );
-  }
+  // Create the language model based on configured provider
+  const model = await createLanguageModel();
 
   const config = STRESS_CONFIGS[stressLevel];
 
@@ -339,32 +474,82 @@ Respond with ONLY a JSON object in this exact format (no markdown, no explanatio
 }
 
 IMPORTANT about "symptoms": Write these like bug reports from a QA tester who sees the UI, not the code:
-- Format: "[Location/Action]: [What went wrong]. Expected [X] but got [Y]."
+- Format: "[Specific Location]: [What went wrong]. Expected [X] but got [Y]."
+- EVERY symptom MUST start with a specific location (page name, component, section of the UI)
+- Location examples: "Home page:", "Filter bar on the Products page:", "User profile sidebar:", "Shopping cart modal:", "Search results in the header:"
 - Do NOT mention variable names, function names, or line numbers
 - Describe what the user SEES, not what the code does
 - Symptoms MUST describe CLEAR, VISIBLE failures that happen 100% of the time
-- Examples: "All prices show $0.00", "Last 2 items are missing", "App crashes with white screen", "Names appear backwards"
+- Good examples with locations:
+  - "Home page product grid: All prices show $0.00 instead of actual values"
+  - "Filter dropdown in the sidebar: Last 2 filter options are missing from the list"
+  - "User dashboard stats panel: App crashes with white screen when loading"
+  - "Navigation breadcrumbs: Names appear in reverse order"
 - DO NOT write symptoms like "app is slower" or "sometimes fails" - these are not clear enough
+- DO NOT write generic locations like "On the page" or "In the app" - be SPECIFIC about WHERE in the UI
 
 The modifiedCode must be the COMPLETE file content. Do not truncate or summarize.`;
 
   try {
-    const { text } = await generateText({
-      model: anthropic("claude-sonnet-4-20250514"),
+    console.log(`Calling AI model with prompt length: ${prompt.length} characters`);
+    const startTime = Date.now();
+    
+    const { text, finishReason, usage } = await generateText({
+      model,
       prompt,
     });
+    
+    const duration = Date.now() - startTime;
+    console.log(`AI response received in ${duration}ms`);
+    console.log(`Finish reason: ${finishReason}, Usage:`, usage);
+    console.log(`Response length: ${text?.length || 0} characters`);
+    
+    // Debug: log first 500 chars of response for troubleshooting
+    if (text) {
+      console.log(`Response preview: ${text.substring(0, 500)}...`);
+    } else {
+      console.log("WARNING: AI returned empty response");
+    }
+
+    // Check for empty or very short responses (common with Ollama misconfiguration)
+    if (!text || text.trim().length < 50) {
+      throw new AIStressError(
+        `AI returned empty or insufficient response (${text?.length || 0} chars). ` +
+        `This often means the model didn't understand the prompt or isn't loaded correctly. ` +
+        `For Ollama: ensure the model is running with 'ollama run <model>' first.`
+      );
+    }
 
     // Parse the response
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
-      throw new AIStressError("Failed to parse AI response - no JSON found in output");
+      console.error("Full AI response (no JSON found):", text);
+      throw new AIStressError(
+        `Failed to parse AI response - no JSON found in output. ` +
+        `Response started with: "${text.substring(0, 200)}..."`
+      );
     }
 
-    const parsed = JSON.parse(jsonMatch[0]);
+    let parsed;
+    try {
+      parsed = JSON.parse(jsonMatch[0]);
+    } catch (parseError) {
+      console.error("JSON parse error. Matched JSON:", jsonMatch[0].substring(0, 500));
+      throw new AIStressError(
+        `Failed to parse JSON from AI response: ${parseError instanceof Error ? parseError.message : 'Unknown parse error'}`,
+        parseError
+      );
+    }
     
     if (!parsed.modifiedCode || !parsed.changes) {
-      throw new AIStressError("Invalid AI response structure - missing modifiedCode or changes");
+      console.error("Invalid response structure:", Object.keys(parsed));
+      throw new AIStressError(
+        `Invalid AI response structure - missing modifiedCode or changes. ` +
+        `Got keys: ${Object.keys(parsed).join(', ')}`
+      );
     }
+
+    console.log(`Successfully parsed AI response with ${parsed.changes.length} changes`);
 
     return {
       content: parsed.modifiedCode,
@@ -375,8 +560,10 @@ The modifiedCode must be the COMPLETE file content. Do not truncate or summarize
     if (error instanceof AIStressError) {
       throw error;
     }
+    console.error("AI stress generation error:", error);
     throw new AIStressError(
-      "AI stress generation failed. Please check your API key and try again.",
+      `AI stress generation failed: ${error instanceof Error ? error.message : 'Unknown error'}. ` +
+      `Please check your configuration and try again.`,
       error
     );
   }
@@ -391,16 +578,16 @@ The modifiedCode must be the COMPLETE file content. Do not truncate or summarize
  */
 function generateFallbackSymptoms(changes: string[]): string[] {
   const symptomTemplates = [
-    "On the main list page: The last 2 items are completely missing. We have 10 items but only 8 show up on screen.",
-    "In the search bar: The first letter of every search is being cut off. Typing 'Apple' searches for 'pple' instead.",
-    "On the cards/list view: Every single item shows the same ID number. All 50 items display 'ID: 1001' even though they should be unique.",
-    "In the user profile section: All names are showing as 'undefined'. The other fields load fine but names are blank.",
-    "After loading the page: App crashes with white screen. Console shows 'Cannot read property of null' error.",
-    "On the dashboard: All totals and prices show $0.00. We have items worth hundreds of dollars but everything displays as zero.",
-    "In the item grid: Half the items are completely blank. Every other card (items 2, 4, 6, 8...) shows as empty.",
-    "When viewing the list: Items that should be visible are hidden, and hidden items are showing. The display logic is completely inverted.",
-    "On the counter display: Shows '3 items' but there are clearly 5 items on screen. The count is always 2 less than actual.",
-    "In the text fields: The last few characters are cut off from every label. 'Description' shows as 'Descript', 'Username' shows as 'Userna'.",
+    "Home page product grid: The last 2 items are completely missing. We have 10 items but only 8 show up on screen.",
+    "Header search bar component: The first letter of every search is being cut off. Typing 'Apple' searches for 'pple' instead.",
+    "Products listing page cards: Every single item shows the same ID number. All 50 items display 'ID: 1001' even though they should be unique.",
+    "User profile sidebar panel: All names are showing as 'undefined'. The other fields load fine but names are blank.",
+    "Dashboard main content area: App crashes with white screen. Console shows 'Cannot read property of null' error.",
+    "Order summary in checkout page: All totals and prices show $0.00. We have items worth hundreds of dollars but everything displays as zero.",
+    "Category filter dropdown in sidebar: Half the options are completely blank. Every other filter (items 2, 4, 6, 8...) shows as empty.",
+    "Featured items carousel on home page: Items that should be visible are hidden, and hidden items are showing. The display logic is completely inverted.",
+    "Cart icon badge in navigation header: Shows '3 items' but there are clearly 5 items in cart. The count is always 2 less than actual.",
+    "Form labels in settings page: The last few characters are cut off from every label. 'Description' shows as 'Descript', 'Username' shows as 'Userna'.",
   ];
   
   // Pick random symptoms based on number of changes
