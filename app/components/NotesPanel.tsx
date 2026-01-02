@@ -17,6 +17,92 @@ import {
 
 type NotificationTab = "bug-reports" | "branch-changes";
 
+interface TabButtonProps {
+  tab: NotificationTab;
+  activeTab: NotificationTab;
+  onClick: () => void;
+  icon: React.ReactNode;
+  label: string;
+  unreadCount: number;
+  badgeVariant: "danger" | "accent";
+}
+
+/**
+ * Tab button component for switching between notification types.
+ * @param tab - The tab identifier this button represents
+ * @param activeTab - The currently active tab
+ * @param onClick - Click handler to switch tabs
+ * @param icon - Icon element to display
+ * @param label - Text label for the tab
+ * @param unreadCount - Number of unread items to show in badge
+ * @param badgeVariant - Color variant for the badge ("danger" or "accent")
+ */
+function TabButton({
+  tab,
+  activeTab,
+  onClick,
+  icon,
+  label,
+  unreadCount,
+  badgeVariant,
+}: TabButtonProps) {
+  const isActive = activeTab === tab;
+  const badgeColors =
+    badgeVariant === "danger"
+      ? "bg-gh-danger/20 text-gh-danger-fg"
+      : "bg-gh-accent/20 text-gh-accent";
+
+  return (
+    <button
+      onClick={onClick}
+      className={`relative flex flex-1 items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-colors ${
+        isActive ? "text-white" : "text-gh-text-muted hover:text-white"
+      }`}
+    >
+      {icon}
+      {label}
+      {unreadCount > 0 && (
+        <span className={`rounded-full px-1.5 py-0.5 text-[10px] ${badgeColors}`}>
+          {unreadCount}
+        </span>
+      )}
+      {isActive && (
+        <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gh-accent" />
+      )}
+    </button>
+  );
+}
+
+interface ActionsBarProps {
+  hasUnread: boolean;
+  onMarkAllRead: () => void;
+  onClearAll: () => void;
+}
+
+/**
+ * Actions bar with "Mark all as read" and "Clear all" buttons.
+ * @param hasUnread - Whether there are unread items to mark as read
+ * @param onMarkAllRead - Handler for marking all items as read
+ * @param onClearAll - Handler for clearing all notifications
+ */
+function ActionsBar({ hasUnread, onMarkAllRead, onClearAll }: ActionsBarProps) {
+  return (
+    <div className="flex items-center justify-end gap-2 border-b border-gh-border px-4 py-2">
+      {hasUnread && (
+        <button
+          onClick={onMarkAllRead}
+          className="text-xs text-gh-accent hover:underline"
+        >
+          Mark all as read
+        </button>
+      )}
+      <Button variant="ghost" size="sm" onClick={onClearAll}>
+        Clear all
+      </Button>
+    </div>
+  );
+}
+
 /**
  * Notes toggle button component for use in headers/navbars.
  * Shows unread count badge when there are unread notes or branch changes.
@@ -176,86 +262,46 @@ export function NotesPanel() {
 
         {/* Tabs */}
         <div className="flex border-b border-gh-border">
-          <button
+          <TabButton
+            tab="bug-reports"
+            activeTab={activeTab}
             onClick={() => setActiveTab("bug-reports")}
-            className={`relative flex flex-1 items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-colors ${
-              activeTab === "bug-reports"
-                ? "text-white"
-                : "text-gh-text-muted hover:text-white"
-            }`}
-          >
-            <LightningIcon className="h-4 w-4" />
-            Bug Reports
-            {unreadCount > 0 && (
-              <span className="rounded-full bg-gh-danger/20 px-1.5 py-0.5 text-[10px] text-gh-danger-fg">
-                {unreadCount}
-              </span>
-            )}
-            {activeTab === "bug-reports" && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gh-accent" />
-            )}
-          </button>
-          <button
+            icon={<LightningIcon className="h-4 w-4" />}
+            label="Bug Reports"
+            unreadCount={unreadCount}
+            badgeVariant="danger"
+          />
+          <TabButton
+            tab="branch-changes"
+            activeTab={activeTab}
             onClick={() => setActiveTab("branch-changes")}
-            className={`relative flex flex-1 items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-colors ${
-              activeTab === "branch-changes"
-                ? "text-white"
-                : "text-gh-text-muted hover:text-white"
-            }`}
-          >
-            <DocumentIcon className="h-4 w-4" />
-            Branch Changes
-            {unreadBranchChangesCount > 0 && (
-              <span className="rounded-full bg-gh-accent/20 px-1.5 py-0.5 text-[10px] text-gh-accent">
-                {unreadBranchChangesCount}
-              </span>
-            )}
-            {activeTab === "branch-changes" && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gh-accent" />
-            )}
-          </button>
+            icon={<DocumentIcon className="h-4 w-4" />}
+            label="Branch Changes"
+            unreadCount={unreadBranchChangesCount}
+            badgeVariant="accent"
+          />
         </div>
 
-        {/* Actions - Bug Reports */}
+        {/* Actions */}
         {activeTab === "bug-reports" && notes.length > 0 && (
-          <div className="flex items-center justify-end gap-2 border-b border-gh-border px-4 py-2">
-            {unreadCount > 0 && (
-              <button
-                onClick={markAllAsRead}
-                className="text-xs text-gh-accent hover:underline"
-              >
-                Mark all as read
-              </button>
-            )}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={clearNotes}
-            >
-              Clear all
-            </Button>
-          </div>
+          <ActionsBar
+            hasUnread={unreadCount > 0}
+            onMarkAllRead={markAllAsRead}
+            onClearAll={() => {
+              clearNotes();
+              clearBranchChanges();
+            }}
+          />
         )}
-
-        {/* Actions - Branch Changes */}
         {activeTab === "branch-changes" && branchChanges.length > 0 && (
-          <div className="flex items-center justify-end gap-2 border-b border-gh-border px-4 py-2">
-            {unreadBranchChangesCount > 0 && (
-              <button
-                onClick={markAllBranchChangesAsRead}
-                className="text-xs text-gh-accent hover:underline"
-              >
-                Mark all as read
-              </button>
-            )}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={clearBranchChanges}
-            >
-              Clear all
-            </Button>
-          </div>
+          <ActionsBar
+            hasUnread={unreadBranchChangesCount > 0}
+            onMarkAllRead={markAllBranchChangesAsRead}
+            onClearAll={() => {
+              clearNotes();
+              clearBranchChanges();
+            }}
+          />
         )}
 
         {/* Content */}
