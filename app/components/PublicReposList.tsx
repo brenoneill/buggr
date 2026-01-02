@@ -145,7 +145,7 @@ export function PublicReposList({ onForkSuccess }: PublicReposListProps) {
       )}
 
       <div className="flex flex-col gap-2">
-        {repos.map((repo) => {
+        {repos.filter((repo) => repo.name !== "stresst").map((repo) => {
           const isForking = forkingRepo === repo.full_name;
           const repoUrl = `https://github.com/${repo.full_name}`;
           
