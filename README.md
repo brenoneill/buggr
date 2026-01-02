@@ -45,9 +45,9 @@ Uses Claude AI to introduce subtle, realistic bugs that developers actually make
 - And many more...
 
 ### 📊 Configurable Stress Levels
-- **🌱 Low** — 1-2 straightforward bugs, easier to spot
-- **🔥 Medium** — 2-3 subtle bugs, requires careful review
-- **💀 High** — 3-5 devious bugs, may include spaghetti code
+- **🌱 Low** — 2 straightforward bugs, easier to spot
+- **🔥 Medium** — 4 subtle bugs, requires careful review
+- **💀 High** — 6 devious bugs, may include spaghetti code
 
 ### 🎯 Focus Areas
 Optionally specify what you want to test (e.g., "async/await", "null handling", "array bounds")
