@@ -317,8 +317,25 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken }: RepoBra
       );
     }
 
-    const filesToStress = availableFiles
-      .sort((a, b) => b.additions + b.deletions - (a.additions + a.deletions))
+    // File selection mode: "most_changes" (default) sorts by additions+deletions, "random" shuffles
+    const fileSelectionMode = process.env.NEXT_PUBLIC_FILE_SELECTION_MODE || "most_changes";
+    
+    let sortedFiles;
+    if (fileSelectionMode === "random") {
+      // Fisher-Yates shuffle for true randomness
+      sortedFiles = [...availableFiles];
+      for (let i = sortedFiles.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [sortedFiles[i], sortedFiles[j]] = [sortedFiles[j], sortedFiles[i]];
+      }
+    } else {
+      // Default: sort by most changes (additions + deletions)
+      sortedFiles = [...availableFiles].sort(
+        (a, b) => b.additions + b.deletions - (a.additions + a.deletions)
+      );
+    }
+
+    const filesToStress = sortedFiles
       .slice(0, MAX_FILES_TO_STRESS)
       .map((f) => f.filename);
 

@@ -91,6 +91,11 @@ AUTH_SECRET=your_random_secret
 
 # Anthropic API key (get at https://console.anthropic.com)
 ANTHROPIC_API_KEY=your_anthropic_api_key
+
+# File selection mode: "most_changes" (default) or "random"
+# - most_changes: selects files with the most additions+deletions in the commit
+# - random: randomly selects from available files in the commit
+NEXT_PUBLIC_FILE_SELECTION_MODE=most_changes
 ```
 
 ### 🦙 Using a Local LLM (Free Alternative)
