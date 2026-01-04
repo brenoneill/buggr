@@ -318,7 +318,7 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken }: RepoBra
     }
 
     // File selection mode: "most_changes" (default) sorts by additions+deletions, "random" shuffles
-    const fileSelectionMode = process.env.NEXT_PUBLIC_FILE_SELECTION_MODE || "most_changes";
+    const fileSelectionMode = process.env.NEXT_PUBLIC_FILE_SELECTION_MODE || "random";
     
     let sortedFiles;
     if (fileSelectionMode === "random") {
