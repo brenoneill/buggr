@@ -66,13 +66,13 @@ export function RepoCard({ repo, actions, className = "" }: RepoCardProps) {
 
   return (
     <div
-      className={`flex items-center justify-between rounded-lg border border-gh-border bg-gh-canvas-subtle px-4 py-3 ${className}`}
+      className={`flex items-center justify-between gap-4 rounded-lg border border-gh-border bg-gh-canvas-subtle px-4 py-3 ${className}`}
     >
-      <div className="flex flex-col gap-0.5">
-        <span className="font-mono text-sm font-medium text-white">
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <span className="truncate font-mono text-sm font-medium text-white">
           {repo.full_name}
         </span>
-        <span className="text-xs text-gh-text-muted">
+        <span className="truncate text-xs text-gh-text-muted">
           {repo.description || "No description"}
         </span>
         <div className="mt-1 flex items-center gap-3">
@@ -91,7 +91,7 @@ export function RepoCard({ repo, actions, className = "" }: RepoCardProps) {
         </div>
       </div>
       {actions ? (
-        <div className="flex items-center gap-2">{actions}</div>
+        <div className="flex shrink-0 items-center gap-2">{actions}</div>
       ) : (
         <a
           href={repoUrl}
