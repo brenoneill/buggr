@@ -79,7 +79,7 @@ Delete stressed branches when you're done to keep your repository clean
 
 ### Environment Variables
 
-Create a `.env.local` file in the root directory:
+Create a `.env.local` file in the root directory (see [complete example](#appendix-environment-variables) at the end of this document):
 
 ```env
 # GitHub OAuth (create at https://github.com/settings/developers)
@@ -259,3 +259,56 @@ MIT License - see LICENSE file for details.
 ---
 
 Built with ❤️ for developer education
+
+---
+
+## Appendix: Environment Variables
+
+Below is a complete `.env.example` file with all supported environment variables. Copy this to `.env.local` and fill in your values:
+
+```env
+# =============================================================================
+# REQUIRED: GitHub OAuth
+# Create at https://github.com/settings/developers
+# =============================================================================
+AUTH_GITHUB_ID=your_github_client_id
+AUTH_GITHUB_SECRET=your_github_client_secret
+
+# =============================================================================
+# REQUIRED: Auth.js Secret
+# Generate with: npx auth secret
+# =============================================================================
+AUTH_SECRET=your_random_secret_at_least_32_characters
+
+# =============================================================================
+# AI PROVIDER CONFIGURATION
+# Choose one of the options below
+# =============================================================================
+
+# Option 1: Anthropic Claude (Default, Recommended)
+# Get your API key at https://console.anthropic.com
+ANTHROPIC_API_KEY=sk-ant-api03-xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+# Option 2: Local LLM via Ollama (Free)
+# See docs/LOCAL_LLM_SETUP.md for setup instructions
+# AI_PROVIDER=ollama
+# AI_MODEL=llama3
+# OLLAMA_BASE_URL=http://localhost:11434/v1
+
+# Option 3: OpenAI-compatible server
+# AI_PROVIDER=openai-compatible
+# AI_MODEL=your-model-name
+# OPENAI_COMPATIBLE_BASE_URL=http://localhost:8080/v1
+# OPENAI_COMPATIBLE_API_KEY=your-api-key-if-required
+
+# =============================================================================
+# OPTIONAL: File Selection Mode
+# Controls how files are selected for bug injection
+# =============================================================================
+# Options: "most_changes" or "random" (default) 
+# - most_changes: selects files with the most additions+deletions in the commit
+# - random: randomly selects from available files in the commit
+NEXT_PUBLIC_FILE_SELECTION_MODE=random
+```
+
+> 💡 **Tip:** Never commit your `.env.local` file to version control. It's already in `.gitignore` by default.
