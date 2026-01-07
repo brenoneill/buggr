@@ -1,8 +1,8 @@
 import type { IconProps } from "./types";
 
 /**
- * Buggr logo icon - a cute bug/caterpillar made of 3 stacked rounded shapes.
- * Inspired by Caterpie from Pokemon with a simple outline style.
+ * Buggr logo icon - a code-bug caterpillar made of stacked angle brackets < >.
+ * Combines programming syntax with a caterpillar/bug shape.
  * Uses stroke="currentColor" to inherit text color from parent.
  *
  * @param className - Tailwind classes for styling
@@ -21,18 +21,21 @@ export function BuggrIcon({ className = "h-5 w-5", ariaLabel }: IconProps) {
       aria-hidden={ariaLabel ? undefined : true}
       aria-label={ariaLabel}
     >
-      {/* Head - small circle at top with antennae */}
-      <circle cx="12" cy="5" r="2.5" />
-      {/* Left antenna */}
-      <path d="M10 3.5 L8 1.5" />
-      {/* Right antenna */}
-      <path d="M14 3.5 L16 1.5" />
+      {/* Antennae - like // comment slashes */}
+      <path d="M9.5 4 L7.5 1" />
+      <path d="M14.5 4 L16.5 1" />
       
-      {/* Middle body segment - medium ellipse */}
-      <ellipse cx="12" cy="11" rx="3.5" ry="3" />
+      {/* Head segment - small < > */}
+      <path d="M9.5 4 L12 6.5 L14.5 4" />
+      <path d="M9.5 4 L12 1.5 L14.5 4" />
       
-      {/* Bottom/rear segment - larger ellipse */}
-      <ellipse cx="12" cy="18.5" rx="4.5" ry="3.5" />
+      {/* Middle segment - medium < > */}
+      <path d="M7.5 9 L12 13 L16.5 9" />
+      <path d="M7.5 9 L12 5 L16.5 9" />
+      
+      {/* Bottom/rear segment - large < > */}
+      <path d="M5 16 L12 22 L19 16" />
+      <path d="M5 16 L12 10 L19 16" />
     </svg>
   );
 }
