@@ -412,10 +412,13 @@ export function ScorePanel({
     isVisible,
   };
 
+  // Whether to show the analysis/slim view (during loading or when viewing results)
+  const showingAnalysisMode = analyzing || (analysisResult && showAnalysisView);
+
   return (
     <div className={`flex h-full flex-col gap-4 overflow-y-auto pt-6 transition-all duration-500 ease-out ${isVisible ? "opacity-100" : "opacity-0"}`}>
-      {/* View Toggle - shown when analysis results exist */}
-      {analysisResult && (
+      {/* View Toggle - shown when analyzing or analysis results exist */}
+      {(analyzing || analysisResult) && (
         <div className="flex items-center justify-center gap-1 p-1 rounded-lg bg-gh-canvas-subtle">
           <button
             onClick={() => setShowAnalysisView(true)}
@@ -443,47 +446,49 @@ export function ScorePanel({
         </div>
       )}
 
-      {/* Score Card - slim when showing analysis, full otherwise */}
-      {analysisResult && showAnalysisView ? (
+      {/* Score Card - slim when showing analysis mode, full otherwise */}
+      {showingAnalysisMode ? (
         <SlimScoreCard {...scoreCardProps} />
       ) : (
         <FullScoreCard {...scoreCardProps} />
       )}
 
-      {/* Analyze Button or Loading Progress - only when no analysis yet */}
-      {!analysisResult && (
+      {/* Analyze Button - only when not analyzing and no result yet */}
+      {!analyzing && !analysisResult && (
         <div 
           className={`transition-all duration-500 ease-out ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
           style={{ transitionDelay: "900ms" }}
         >
-          {analyzing ? (
-            <LoadingProgress
-              steps={ANALYSIS_STEPS}
-              currentStep={analysisStep}
-              title="Analyzing your code"
-              subtitle="AI is reviewing your fix..."
-            />
-          ) : (
-            <Button 
-              variant="primary" 
-              className="w-full" 
-              onClick={handleAnalyzeCode}
-              disabled={!stressMetadata}
-            >
-              <SparklesIcon className="h-4 w-4" />
-              Analyze Code
-            </Button>
-          )}
+          <Button 
+            variant="primary" 
+            className="w-full" 
+            onClick={handleAnalyzeCode}
+            disabled={!stressMetadata}
+          >
+            <SparklesIcon className="h-4 w-4" />
+            Analyze Code
+          </Button>
         </div>
       )}
 
-      {/* Analysis Results - shown when analysis exists and analysis view is active */}
+      {/* Loading Progress - shown in analysis view while analyzing */}
+      {analyzing && showAnalysisView && (
+        <LoadingProgress
+          steps={ANALYSIS_STEPS}
+          currentStep={analysisStep}
+          title="Analyzing your code"
+          subtitle="AI is reviewing your fix..."
+        />
+      )}
+
+      {/* Analysis Error */}
       {analysisError && (
         <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3">
           <p className="text-sm text-red-400">{analysisError}</p>
         </div>
       )}
 
+      {/* Analysis Results - shown when analysis exists and analysis view is active */}
       {analysisResult && showAnalysisView && (
         <div 
           className={`space-y-3 transition-all duration-500 ease-out ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
@@ -611,4 +616,5 @@ export function ScorePanel({
     </div>
   );
 }
+
 
