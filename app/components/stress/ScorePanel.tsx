@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import type { GitHubCommit, StressMetadata } from "@/lib/github";
+import type { AnalysisFeedback, AnalyzeResponse } from "@/app/api/github/analyze/route";
 import { Button } from "@/app/components/inputs/Button";
-import { CloseIcon, BuggrIcon, SparklesIcon } from "@/app/components/icons";
+import { CloseIcon, BuggrIcon, SparklesIcon, CheckIcon, InfoIcon, LightbulbIcon } from "@/app/components/icons";
 import {
   calculateScoreRating,
   DIFFICULTY_CONFIG,
@@ -77,6 +78,9 @@ export function ScorePanel({
   stressMetadata,
 }: ScorePanelProps) {
   const [isVisible, setIsVisible] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [analysisResult, setAnalysisResult] = useState<AnalyzeResponse | null>(null);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
 
   // Trigger entrance animation on mount
   useEffect(() => {
@@ -104,10 +108,80 @@ export function ScorePanel({
 
   /**
    * Handles the analyze code action.
-   * TODO: Implement actual analysis logic
+   * Fetches the complete commit's diff and analyzes it for common issues.
    */
-  const handleAnalyzeCode = () => {
-    console.log("Analyzing code...");
+  const handleAnalyzeCode = async () => {
+    if (!stressMetadata) {
+      setAnalysisError("No stress metadata available for analysis");
+      return;
+    }
+
+    setAnalyzing(true);
+    setAnalysisError(null);
+
+    try {
+      const response = await fetch("/api/github/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          owner: stressMetadata.owner,
+          repo: stressMetadata.repo,
+          sha: completeCommit.sha,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to analyze code");
+      }
+
+      const result: AnalyzeResponse = await response.json();
+      setAnalysisResult(result);
+    } catch (error) {
+      console.error("Error analyzing code:", error);
+      setAnalysisError("Failed to analyze code. Please try again.");
+    } finally {
+      setAnalyzing(false);
+    }
+  };
+
+  /**
+   * Returns the appropriate icon for a feedback type.
+   * 
+   * @param type - The feedback type
+   * @returns JSX element for the icon
+   */
+  const getFeedbackIcon = (type: AnalysisFeedback["type"]) => {
+    switch (type) {
+      case "success":
+        return <CheckIcon className="h-4 w-4 text-green-400" />;
+      case "warning":
+        return <span className="text-sm">⚠️</span>;
+      case "hint":
+        return <LightbulbIcon className="h-4 w-4 text-yellow-400" />;
+      case "info":
+      default:
+        return <InfoIcon className="h-4 w-4 text-blue-400" />;
+    }
+  };
+
+  /**
+   * Returns the appropriate background color for a feedback type.
+   * 
+   * @param type - The feedback type
+   * @returns Tailwind CSS class for background color
+   */
+  const getFeedbackBgColor = (type: AnalysisFeedback["type"]) => {
+    switch (type) {
+      case "success":
+        return "bg-green-500/10 border-green-500/30";
+      case "warning":
+        return "bg-yellow-500/10 border-yellow-500/30";
+      case "hint":
+        return "bg-amber-500/10 border-amber-500/30";
+      case "info":
+      default:
+        return "bg-blue-500/10 border-blue-500/30";
+    }
   };
 
   return (
@@ -192,11 +266,74 @@ export function ScorePanel({
         className={`transition-all duration-500 ease-out ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
         style={{ transitionDelay: "900ms" }}
       >
-        <Button variant="primary" className="w-full" onClick={handleAnalyzeCode}>
-          <SparklesIcon className="h-4 w-4" />
-          Analyze Code
+        <Button 
+          variant="primary" 
+          className="w-full" 
+          onClick={handleAnalyzeCode}
+          disabled={analyzing || !stressMetadata}
+        >
+          {analyzing ? (
+            <>
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+              Analyzing...
+            </>
+          ) : (
+            <>
+              <SparklesIcon className="h-4 w-4" />
+              Analyze Code
+            </>
+          )}
         </Button>
       </div>
+
+      {/* Analysis Results */}
+      {analysisError && (
+        <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3">
+          <p className="text-sm text-red-400">{analysisError}</p>
+        </div>
+      )}
+
+      {analysisResult && (
+        <div 
+          className={`space-y-3 transition-all duration-500 ease-out ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+        >
+          <h3 className="text-xs font-semibold tracking-wide text-gh-text-muted uppercase">Analysis</h3>
+          
+          {/* Summary */}
+          <div className={`rounded-lg border p-3 ${analysisResult.isPerfect ? "border-green-500/30 bg-green-500/10" : "border-gh-border bg-gh-canvas-subtle"}`}>
+            <p className={`text-sm font-medium ${analysisResult.isPerfect ? "text-green-400" : "text-white"}`}>
+              {analysisResult.summary}
+            </p>
+          </div>
+
+          {/* Feedback Items */}
+          {analysisResult.feedback.length > 0 && (
+            <div className="space-y-2">
+              {analysisResult.feedback.map((item, index) => (
+                <div 
+                  key={index}
+                  className={`rounded-lg border p-3 ${getFeedbackBgColor(item.type)}`}
+                >
+                  <div className="flex items-start gap-2">
+                    <div className="mt-0.5 shrink-0">
+                      {getFeedbackIcon(item.type)}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-white">{item.title}</p>
+                      <p className="text-xs text-gh-text-muted mt-1">{item.message}</p>
+                      {item.file && (
+                        <code className="mt-1 inline-block rounded bg-gh-canvas-default px-1.5 py-0.5 font-mono text-xs text-gh-accent">
+                          {item.file}
+                        </code>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Timeline - Compact */}
       <div 
