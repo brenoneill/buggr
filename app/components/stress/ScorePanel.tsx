@@ -17,7 +17,7 @@ const ANALYSIS_STEPS: LoadingStep[] = [
   { label: "Reading your code diff", timeEstimate: "~1s" },
   { label: "Checking for reasoning.txt", timeEstimate: "~1s" },
   { label: "AI analyzing your fix", timeEstimate: "~5s" },
-  { label: "Generating feedback", timeEstimate: "~2s" },
+  { label: "Generating feedback", timeEstimate: "~1m" },
 ];
 
 interface ScorePanelProps {
