@@ -2,6 +2,7 @@
 
 import { Button } from "@/app/components/inputs/Button";
 import { Card } from "@/app/components/Card";
+import { Container } from "@/app/components/Container";
 import { StressLevelSelector } from "./StressLevelSelector";
 import { LoadingProgress, type LoadingStep } from "./LoadingProgress";
 import { CloseIcon, LightningIcon } from "@/app/components/icons";
@@ -157,7 +158,7 @@ export function CreateBranchForm({
 
       {/* Custom stress settings */}
       {stressLevel === "custom" && (
-        <div className="flex flex-col gap-3 rounded-lg border border-gh-border bg-gh-canvas-subtle p-3">
+        <Container className="flex flex-col gap-3 p-3">
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-medium text-gh-text-muted">
               Number of files to bugger
@@ -198,7 +199,7 @@ export function CreateBranchForm({
               Total bugs distributed across all selected files
             </p>
           </div>
-        </div>
+        </Container>
       )}
 
       {/* Optional stress context */}

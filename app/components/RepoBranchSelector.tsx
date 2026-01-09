@@ -12,6 +12,7 @@ import { TextButton } from "@/app/components/inputs/TextButton";
 import { EmptyState, EmptyStateIcons } from "@/app/components/EmptyState";
 import { CommitCard } from "@/app/components/commits/CommitCard";
 import { FileChangeList } from "@/app/components/commits/FileChangeList";
+import { Container } from "@/app/components/Container";
 import { CreateBranchForm } from "@/app/components/stress/CreateBranchForm";
 import { BranchSuccessCard } from "@/app/components/stress/BranchSuccessCard";
 import { ScorePanel } from "@/app/components/stress/ScorePanel";
@@ -769,11 +770,11 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken }: RepoBra
             ) : commits.length === 0 ? (
               <EmptyState icon={EmptyStateIcons.commits} title="No commits found" size="sm" />
             ) : (
-              <div className="flex-1 overflow-y-auto rounded-lg border border-gh-border bg-gh-canvas-subtle">
+              <Container scrollable>
                 {commits.map((commit) => (
                   <CommitCard key={commit.sha} commit={commit} isSelected={selectedCommit?.sha === commit.sha} onClick={() => handleCommitSelect(commit)} />
                 ))}
-              </div>
+              </Container>
             )}
           </div>
         )}
