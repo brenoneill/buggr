@@ -68,7 +68,7 @@ export function ToggleGroup<T extends string>({
               disabled={disabled}
               className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-all disabled:cursor-not-allowed disabled:opacity-50 ${
                 isSelected
-                  ? "bg-gh-canvas-default text-white shadow-sm"
+                  ? "bg-gh-border-muted text-white shadow-sm ring-1 ring-gh-border"
                   : "text-gh-text-muted hover:text-white"
               }`}
             >
