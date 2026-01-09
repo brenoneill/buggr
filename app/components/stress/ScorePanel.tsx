@@ -5,6 +5,7 @@ import type { GitHubCommit, StressMetadata } from "@/lib/github";
 import type { AnalysisFeedback, AnalyzeResponse } from "@/app/api/github/analyze/route";
 import { formatShortDate } from "@/lib/date";
 import { Button } from "@/app/components/inputs/Button";
+import { ToggleGroup } from "@/app/components/inputs/ToggleGroup";
 import { LoadingProgress, LoadingStep } from "@/app/components/stress/LoadingProgress";
 import { CloseIcon, BuggrIcon, SparklesIcon, CheckIcon, InfoIcon, LightbulbIcon, TrophyIcon } from "@/app/components/icons";
 import {
@@ -404,31 +405,14 @@ export function ScorePanel({
     <div className={`flex h-full flex-col gap-4 overflow-y-auto pt-6 transition-all duration-500 ease-out ${isVisible ? "opacity-100" : "opacity-0"}`}>
       {/* View Toggle - shown when analyzing or analysis results exist */}
       {(analyzing || analysisResult) && (
-        <div className="flex items-center justify-center gap-1 p-1 rounded-lg bg-gh-canvas-subtle">
-          <button
-            onClick={() => setShowAnalysisView(true)}
-            className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
-              showAnalysisView
-                ? "bg-gh-canvas-default text-white shadow-sm"
-                : "text-gh-text-muted hover:text-white"
-            }`}
-          >
-            <SparklesIcon className="inline-block h-3 w-3 mr-1.5" />
-            Analysis
-          </button>
-          <div className="w-px h-5 bg-gh-border" />
-          <button
-            onClick={() => setShowAnalysisView(false)}
-            className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
-              !showAnalysisView
-                ? "bg-gh-canvas-default text-white shadow-sm"
-                : "text-gh-text-muted hover:text-white"
-            }`}
-          >
-            <TrophyIcon className="inline-block h-3 w-3 mr-1.5" />
-            Score
-          </button>
-        </div>
+        <ToggleGroup
+          options={[
+            { value: "analysis", label: "Analysis", icon: SparklesIcon },
+            { value: "score", label: "Score", icon: TrophyIcon },
+          ]}
+          value={showAnalysisView ? "analysis" : "score"}
+          onChange={(val) => setShowAnalysisView(val === "analysis")}
+        />
       )}
 
       {/* Score Card - slim when showing analysis mode, full otherwise */}
