@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { RepoCard, RepoCardData } from "./RepoCard";
+import { Container } from "@/app/components/Container";
 
 /**
  * Displays a preview of public practice repositories on the landing page.
@@ -37,9 +38,9 @@ export function PublicReposPreview() {
       <div className="flex flex-col gap-3">
         {/* Skeleton loaders */}
         {[1, 2, 3].map((i) => (
-          <div
+          <Container
             key={i}
-            className="flex items-center justify-between rounded-lg border border-gh-border bg-gh-canvas-subtle px-4 py-3"
+            className="flex items-center justify-between px-4 py-3"
           >
             <div className="flex flex-col gap-2">
               <div className="h-4 w-40 animate-pulse rounded bg-gh-border" />
@@ -50,7 +51,7 @@ export function PublicReposPreview() {
               </div>
             </div>
             <div className="h-7 w-16 animate-pulse rounded bg-gh-border" />
-          </div>
+          </Container>
         ))}
       </div>
     );
@@ -58,9 +59,9 @@ export function PublicReposPreview() {
 
   if (error || repos.length === 0) {
     return (
-      <div className="rounded-lg border border-gh-border bg-gh-canvas-subtle px-4 py-6 text-center text-sm text-gh-text-muted">
+      <Container className="px-4 py-6 text-center text-sm text-gh-text-muted">
         Practice repositories will be available soon.
-      </div>
+      </Container>
     );
   }
 
@@ -69,9 +70,9 @@ export function PublicReposPreview() {
 
   if (practiceRepos.length === 0) {
     return (
-      <div className="rounded-lg border border-gh-border bg-gh-canvas-subtle px-4 py-6 text-center text-sm text-gh-text-muted">
+      <Container className="px-4 py-6 text-center text-sm text-gh-text-muted">
         Practice repositories will be available soon.
-      </div>
+      </Container>
     );
   }
 

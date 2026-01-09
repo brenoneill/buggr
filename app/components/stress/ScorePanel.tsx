@@ -3,7 +3,9 @@
 import { useEffect, useState, useRef } from "react";
 import type { GitHubCommit, StressMetadata } from "@/lib/github";
 import type { AnalysisFeedback, AnalyzeResponse } from "@/app/api/github/analyze/route";
+import { formatShortDate } from "@/lib/date";
 import { Button } from "@/app/components/inputs/Button";
+import { ToggleGroup } from "@/app/components/inputs/ToggleGroup";
 import { LoadingProgress, LoadingStep } from "@/app/components/stress/LoadingProgress";
 import { CloseIcon, BuggrIcon, SparklesIcon, CheckIcon, InfoIcon, LightbulbIcon, TrophyIcon } from "@/app/components/icons";
 import {
@@ -31,22 +33,6 @@ interface ScorePanelProps {
   onClose: () => void;
   /** Optional buggr metadata from .buggr.json */
   stressMetadata?: StressMetadata | null;
-}
-
-/**
- * Formats a date string into a human-readable format.
- *
- * @param dateString - ISO date string to format
- * @returns Formatted date string (e.g., "Dec 17, 2025 at 2:30 PM")
- */
-function formatFullDate(dateString: string): string {
-  return new Date(dateString).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
 }
 
 /**
@@ -419,31 +405,14 @@ export function ScorePanel({
     <div className={`flex h-full flex-col gap-4 overflow-y-auto pt-10 transition-all duration-500 ease-out ${isVisible ? "opacity-100" : "opacity-0"}`}>
       {/* View Toggle - shown when analyzing or analysis results exist */}
       {(analyzing || analysisResult) && (
-        <div className="flex items-center justify-center gap-1 p-1 rounded-lg bg-gh-canvas-subtle">
-          <button
-            onClick={() => setShowAnalysisView(true)}
-            className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
-              showAnalysisView
-                ? "bg-gh-canvas-default text-white shadow-sm"
-                : "text-gh-text-muted hover:text-white"
-            }`}
-          >
-            <SparklesIcon className="inline-block h-3 w-3 mr-1.5" />
-            Analysis
-          </button>
-          <div className="w-px h-5 bg-gh-border" />
-          <button
-            onClick={() => setShowAnalysisView(false)}
-            className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
-              !showAnalysisView
-                ? "bg-gh-canvas-default text-white shadow-sm"
-                : "text-gh-text-muted hover:text-white"
-            }`}
-          >
-            <TrophyIcon className="inline-block h-3 w-3 mr-1.5" />
-            Score
-          </button>
-        </div>
+        <ToggleGroup
+          options={[
+            { value: "analysis", label: "Analysis", icon: SparklesIcon },
+            { value: "score", label: "Score", icon: TrophyIcon },
+          ]}
+          value={showAnalysisView ? "analysis" : "score"}
+          onChange={(val) => setShowAnalysisView(val === "analysis")}
+        />
       )}
 
       {/* Score Card - slim when showing analysis mode, full otherwise */}
@@ -560,7 +529,7 @@ export function ScorePanel({
                 {startCommit.commit.message.split("\n")[0]}
               </p>
               <p className="text-xs text-gh-text-muted">
-                {formatFullDate(startCommit.commit.author.date)}
+                {formatShortDate(startCommit.commit.author.date)}
               </p>
             </div>
             <code className="shrink-0 rounded bg-gh-canvas-default px-2 py-0.5 font-mono text-xs text-gh-accent">
@@ -589,7 +558,7 @@ export function ScorePanel({
                 {completeCommit.commit.message.split("\n")[0]}
               </p>
               <p className="text-xs text-gh-text-muted">
-                {formatFullDate(completeCommit.commit.author.date)}
+                {formatShortDate(completeCommit.commit.author.date)}
               </p>
             </div>
             <code className="shrink-0 rounded bg-gh-canvas-default px-2 py-0.5 font-mono text-xs text-gh-accent">

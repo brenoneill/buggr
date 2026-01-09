@@ -2,6 +2,7 @@
 
 import { ReactNode } from "react";
 import { DocumentIcon, CheckIcon, SearchIcon } from "@/app/components/icons";
+import { Container } from "@/app/components/Container";
 
 interface EmptyStateProps {
   /**
@@ -34,9 +35,9 @@ interface EmptyStateProps {
 export function EmptyState({ icon, title, description, size = "default" }: EmptyStateProps) {
   if (size === "sm") {
     return (
-      <div className="rounded-lg border border-gh-border bg-gh-canvas-subtle px-4 py-3 text-sm text-gh-text-muted">
+      <Container className="px-4 py-3 text-sm text-gh-text-muted">
         {title}
-      </div>
+      </Container>
     );
   }
 

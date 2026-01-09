@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import type { GitHubRepo, GitHubBranch, GitHubCommit, GitHubCommitDetails, StressMetadata } from "@/lib/github";
 import { fetchStressMetadata } from "@/lib/github";
+import { formatFullDate, generateTimestamp } from "@/lib/date";
 import { useDashboardUrl } from "@/app/hooks/useDashboardUrl";
 import { useNotes } from "@/app/context/NotesContext";
 import { NotesPanel } from "@/app/components/NotesPanel";
@@ -12,6 +13,7 @@ import { TextButton } from "@/app/components/inputs/TextButton";
 import { EmptyState, EmptyStateIcons } from "@/app/components/EmptyState";
 import { CommitCard } from "@/app/components/commits/CommitCard";
 import { FileChangeList } from "@/app/components/commits/FileChangeList";
+import { Container } from "@/app/components/Container";
 import { CreateBranchForm } from "@/app/components/stress/CreateBranchForm";
 import { BranchSuccessCard } from "@/app/components/stress/BranchSuccessCard";
 import { ScorePanel } from "@/app/components/stress/ScorePanel";
@@ -22,6 +24,8 @@ import { LOADING_STEPS } from "@/app/components/stress/loading-steps";
 interface RepoBranchSelectorProps {
   repos: GitHubRepo[];
   accessToken: string;
+  userName?: string;
+  logoutForm?: React.ReactNode;
 }
 
 /**
@@ -31,7 +35,7 @@ interface RepoBranchSelectorProps {
  * @param repos - List of user's GitHub repositories
  * @param accessToken - GitHub OAuth access token for fetching data
  */
-export function RepoBranchSelector({ repos: initialRepos, accessToken }: RepoBranchSelectorProps) {
+export function RepoBranchSelector({ repos: initialRepos, accessToken, userName, logoutForm }: RepoBranchSelectorProps) {
   const { addNote, addBranchChange } = useNotes();
   const { params: urlParams, isInitialized: urlInitialized, updateParams: updateUrlParams, clearParams: clearUrlParams } = useDashboardUrl();
 
@@ -157,20 +161,6 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken }: RepoBra
   }, [selectedRepo, selectedBranch, selectedCommit, showScorePanel, urlInitialized, updateUrlParams]);
 
   /**
-   * Generates a timestamp string for branch naming (YYYYMMDD-HHMMSS).
-   */
-  function generateTimestamp(): string {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, "0");
-    const day = String(now.getDate()).padStart(2, "0");
-    const hours = String(now.getHours()).padStart(2, "0");
-    const minutes = String(now.getMinutes()).padStart(2, "0");
-    const seconds = String(now.getSeconds()).padStart(2, "0");
-    return `${year}${month}${day}-${hours}${minutes}${seconds}`;
-  }
-
-  /**
    * Fetches branches for the selected repository.
    */
   async function handleRepoSelect(repo: GitHubRepo) {
@@ -229,7 +219,7 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken }: RepoBra
         handleCommitSelect(data[0]);
       }
 
-      // Fetch stress metadata for buggr branches
+      // Fetch stress metadata for buggr branches, so metadat can be compared for analysis
       if (branchName.includes("buggr-")) {
         setLoadingMetadata(true);
         try {
@@ -317,7 +307,7 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken }: RepoBra
       );
     }
 
-    // File selection mode: "most_changes" (default) sorts by additions+deletions, "random" shuffles
+    // File selection mode: "most_changes" sorts by additions+deletions, "random" (default) shuffles
     const fileSelectionMode = process.env.NEXT_PUBLIC_FILE_SELECTION_MODE || "random";
     
     let sortedFiles;
@@ -329,7 +319,6 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken }: RepoBra
         [sortedFiles[i], sortedFiles[j]] = [sortedFiles[j], sortedFiles[i]];
       }
     } else {
-      // Default: sort by most changes (additions + deletions)
       sortedFiles = [...availableFiles].sort(
         (a, b) => b.additions + b.deletions - (a.additions + a.deletions)
       );
@@ -504,20 +493,6 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken }: RepoBra
     } finally {
       setDeletingBranch(false);
     }
-  }
-
-  /**
-   * Formats a date string to a full readable format.
-   */
-  function formatFullDate(dateString: string): string {
-    return new Date(dateString).toLocaleString("en-US", {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
   }
 
   /**
@@ -770,11 +745,11 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken }: RepoBra
             ) : commits.length === 0 ? (
               <EmptyState icon={EmptyStateIcons.commits} title="No commits found" size="sm" />
             ) : (
-              <div className="flex-1 overflow-y-auto rounded-lg border border-gh-border bg-gh-canvas-subtle">
+              <Container scrollable>
                 {commits.map((commit) => (
                   <CommitCard key={commit.sha} commit={commit} isSelected={selectedCommit?.sha === commit.sha} onClick={() => handleCommitSelect(commit)} />
                 ))}
-              </div>
+              </Container>
             )}
           </div>
         )}
@@ -782,6 +757,18 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken }: RepoBra
 
       {/* Right Panel - Commit Details & Files */}
       <div className="flex h-full w-[60%] flex-col overflow-hidden p-6">
+        {/* Header */}
+        <div className="mb-6 flex items-center justify-end">
+          {userName && (
+            <div className="flex items-center gap-4">
+              <span className="text-sm text-gh-text-muted">
+                <span className="font-semibold text-white">{userName}</span>
+              </span>
+              <div>{logoutForm}</div>
+            </div>
+          )}
+        </div>
+
         {/* Score Panel View */}
         {showScorePanel && startCommit && completeCommit ? (
           <ScorePanel startCommit={startCommit} completeCommit={completeCommit} branchName={selectedBranch || ""} onClose={() => setShowScorePanel(false)} stressMetadata={stressMetadata} />

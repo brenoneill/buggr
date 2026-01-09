@@ -1,5 +1,7 @@
 "use client";
 
+import { Container } from "@/app/components/Container";
+
 interface FileChange {
   sha: string;
   filename: string;
@@ -42,14 +44,14 @@ function getStatusColor(status: string): { bg: string; text: string; label: stri
 export function FileChangeList({ files }: FileChangeListProps) {
   if (files.length === 0) {
     return (
-      <div className="rounded-lg border border-gh-border bg-gh-canvas-subtle px-4 py-3 text-sm text-gh-text-muted">
+      <Container className="px-4 py-3 text-sm text-gh-text-muted">
         No files changed
-      </div>
+      </Container>
     );
   }
 
   return (
-    <div className="flex-1 overflow-y-auto rounded-lg border border-gh-border bg-gh-canvas-subtle">
+    <Container scrollable>
       {files.map((file) => {
         const statusStyle = getStatusColor(file.status);
         return (
@@ -85,7 +87,7 @@ export function FileChangeList({ files }: FileChangeListProps) {
           </div>
         );
       })}
-    </div>
+    </Container>
   );
 }
 
