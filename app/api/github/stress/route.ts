@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { fetchFileContent, updateFile, createStressMetadata, StressMetadata } from "@/lib/github";
 import { introduceAIStress } from "@/lib/ai-stress";
+import { prisma } from "@/lib/prisma";
 
 // Maximum file size in lines to process (keeps token usage reasonable)
 const MAX_FILE_LINES_SINGLE = 5000; // If only 1 file, allow up to 5000 lines
@@ -253,17 +254,52 @@ export async function POST(request: NextRequest) {
     // Deduplicate symptoms
     const uniqueSymptoms = [...new Set(allSymptoms)];
 
-    // Create metadata file for performance tracking (only if stress was successful)
+    // Create database record and metadata file (only if stress was successful)
+    let buggerId: string | null = null;
+    
     if (successCount > 0) {
       const successfulResults = results.filter((r) => r.success);
       const allChanges = successfulResults.flatMap((r) => r.changes || []);
+      const filesBuggered = successfulResults.map((r) => r.file);
+      const effectiveStressLevel = stressLevel === "custom" ? "high" : stressLevel;
+
+      // Save Bugger to database first (so we have the ID for metadata)
+      try {
+        // Find user by email from session
+        const user = session.user?.email 
+          ? await prisma.user.findUnique({ where: { email: session.user.email } })
+          : null;
+
+        if (user) {
+          const bugger = await prisma.bugger.create({
+            data: {
+              userId: user.id,
+              owner,
+              repo,
+              branchName: branch,
+              stressLevel: effectiveStressLevel,
+              bugCount: totalBugCount,
+              originalCommitSha: originalCommitSha || "",
+              symptoms: uniqueSymptoms,
+              changes: allChanges,
+              filesBuggered,
+            },
+          });
+          buggerId = bugger.id;
+        }
+      } catch (dbError) {
+        // Log but don't fail the request if database save fails
+        console.error("Failed to save bugger to database:", dbError);
+      }
       
+      // Create metadata with buggerId included
       const metadata: StressMetadata = {
-        stressLevel: stressLevel === "custom" ? "high" : stressLevel, // Store as high for custom
+        buggerId: buggerId || undefined,
+        stressLevel: effectiveStressLevel,
         bugCount: totalBugCount,
         createdAt: new Date().toISOString(),
         symptoms: uniqueSymptoms,
-        filesBuggered: successfulResults.map((r) => r.file),
+        filesBuggered,
         changes: allChanges,
         originalCommitSha: originalCommitSha || "",
         owner,
@@ -271,6 +307,7 @@ export async function POST(request: NextRequest) {
         branch,
       };
 
+      // Save metadata to .buggr.json file in the branch
       try {
         await createStressMetadata(session.accessToken, metadata);
       } catch (metadataError) {
@@ -283,6 +320,7 @@ export async function POST(request: NextRequest) {
       message: `${successCount} of ${files.length} files have been buggered up`,
       results,
       symptoms: uniqueSymptoms,
+      buggerId, // Return the buggerId so the client can use it later
     });
   } catch (error) {
     console.error("Error buggering up code:", error);

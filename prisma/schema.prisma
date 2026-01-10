@@ -31,9 +31,9 @@ model User {
   gitProfileUrl String?   // URL to their profile
 
   // Relations
-  accounts      Account[]
-  sessions      Session[]
-  stressResults StressResult[]
+  accounts Account[]
+  sessions Session[]
+  buggers  Bugger[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -80,8 +80,9 @@ model VerificationToken {
 // Buggr Application Models
 // ============================================================================
 
-/// Stores results from stress testing / debugging sessions
-model StressResult {
+/// A "Bugger" - created when code is buggered up (stress test challenge)
+/// Contains the bug report, changes made, and metadata about the challenge
+model Bugger {
   id          String   @id @default(cuid())
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -91,30 +92,57 @@ model StressResult {
   repo        String   // Repository name
   branchName  String   // The stress test branch
 
-  // Scoring
-  grade       String   // "A+", "A", "B", etc.
-  timeMs      Int      // Time to complete in milliseconds
-  bugCount    Int      // Number of bugs in the challenge
+  // Challenge configuration
   stressLevel String   // "low", "medium", "high"
+  bugCount    Int      // Number of bugs introduced
 
-  // Commit references
-  startCommitSha    String
-  completeCommitSha String
+  // Commit reference
+  originalCommitSha String  // The commit the branch was created from (before bugs)
 
-  // Bug details (from StressMetadata)
-  symptoms      String[]  // User-facing symptom descriptions
-  filesBuggered String[]  // Files that were buggered
-  changes       String[]  // Technical descriptions of bugs introduced
+  // Bug Report - what the user sees as symptoms
+  symptoms    String[]
 
-  // AI Analysis results
-  analysisSummary   String?   // One-line summary from AI
-  analysisIsPerfect Boolean   @default(false)
-  analysisFeedback  Json?     // Full feedback array from AI
+  // Branch Changes - technical descriptions of bugs introduced
+  changes     String[]
+
+  // Files that were buggered
+  filesBuggered String[]
+
+  // Result (optional - null until user completes the challenge)
+  result      Result?
 
   createdAt   DateTime @default(now())
 
   @@index([userId])
   @@index([owner, repo])
+  @@index([branchName])
+  @@index([createdAt])
+}
+
+/// A "Result" - created when user completes and analyzes their fix
+/// Contains the score, timing, and AI recommendations
+model Result {
+  id        String   @id @default(cuid())
+  
+  // Link to the Bugger challenge
+  buggerId  String   @unique
+  bugger    Bugger   @relation(fields: [buggerId], references: [id], onDelete: Cascade)
+
+  // Scoring
+  grade     String   // "A+", "A", "B", etc.
+  timeMs    Int      // Time to complete in milliseconds
+
+  // Commit references for the fix
+  startCommitSha    String  // The "buggr: start" commit
+  completeCommitSha String  // The "buggr: complete" commit
+
+  // AI Analysis / Recommendations
+  analysisSummary   String?   // One-line summary from AI
+  analysisIsPerfect Boolean   @default(false)
+  analysisFeedback  Json?     // Full feedback array from AI
+
+  createdAt DateTime @default(now())
+
   @@index([createdAt])
 }
 

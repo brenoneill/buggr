@@ -4,30 +4,21 @@ import { prisma } from "@/lib/prisma";
 import type { AnalysisFeedback } from "@/app/api/github/analyze/route";
 
 /**
- * Request body for saving a stress test result.
+ * Request body for saving a Result (when user completes and analyzes).
  */
 interface SaveResultRequest {
-  // Repository info
-  owner: string;
-  repo: string;
-  branchName: string;
+  // Link to the Bugger challenge
+  buggerId: string;
 
   // Scoring
   grade: string;
   timeMs: number;
-  bugCount: number;
-  stressLevel: "low" | "medium" | "high";
 
-  // Commit references
+  // Commit references for the fix
   startCommitSha: string;
   completeCommitSha: string;
 
-  // Bug details (from StressMetadata)
-  symptoms: string[];
-  filesBuggered: string[];
-  changes: string[];
-
-  // AI Analysis results
+  // AI Analysis / Recommendations
   analysisSummary?: string;
   analysisIsPerfect?: boolean;
   analysisFeedback?: AnalysisFeedback[];
@@ -36,10 +27,10 @@ interface SaveResultRequest {
 /**
  * POST /api/results
  * 
- * Saves a completed stress test result to the database.
- * Called from the ScorePanel after the user completes a debugging challenge.
+ * Saves a Result when user completes and analyzes their fix.
+ * Links to the Bugger challenge that was created earlier.
  * 
- * @returns The created StressResult record
+ * @returns The created Result record
  */
 export async function POST(request: NextRequest) {
   const session = await auth();
@@ -56,8 +47,7 @@ export async function POST(request: NextRequest) {
 
     // Validate required fields
     const requiredFields = [
-      "owner", "repo", "branchName", "grade", "timeMs", 
-      "bugCount", "stressLevel", "startCommitSha", "completeCommitSha"
+      "buggerId", "grade", "timeMs", "startCommitSha", "completeCommitSha"
     ];
     
     for (const field of requiredFields) {
@@ -81,22 +71,42 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create the stress result record
-    const result = await prisma.stressResult.create({
+    // Verify the Bugger exists and belongs to this user
+    const bugger = await prisma.bugger.findUnique({
+      where: { id: body.buggerId },
+      include: { result: true },
+    });
+
+    if (!bugger) {
+      return NextResponse.json(
+        { error: "Bugger not found" },
+        { status: 404 }
+      );
+    }
+
+    if (bugger.userId !== user.id) {
+      return NextResponse.json(
+        { error: "Unauthorized - this bugger belongs to another user" },
+        { status: 403 }
+      );
+    }
+
+    // Check if a result already exists
+    if (bugger.result) {
+      return NextResponse.json(
+        { error: "Result already exists for this bugger" },
+        { status: 409 }
+      );
+    }
+
+    // Create the Result record
+    const result = await prisma.result.create({
       data: {
-        userId: user.id,
-        owner: body.owner,
-        repo: body.repo,
-        branchName: body.branchName,
+        buggerId: body.buggerId,
         grade: body.grade,
         timeMs: body.timeMs,
-        bugCount: body.bugCount,
-        stressLevel: body.stressLevel,
         startCommitSha: body.startCommitSha,
         completeCommitSha: body.completeCommitSha,
-        symptoms: body.symptoms || [],
-        filesBuggered: body.filesBuggered || [],
-        changes: body.changes || [],
         analysisSummary: body.analysisSummary,
         analysisIsPerfect: body.analysisIsPerfect ?? false,
         analysisFeedback: body.analysisFeedback ?? null,
@@ -106,6 +116,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       resultId: result.id,
+      result,
     });
   } catch (error) {
     console.error("[Results] Error saving result:", error);
@@ -119,10 +130,10 @@ export async function POST(request: NextRequest) {
 /**
  * GET /api/results
  * 
- * Fetches stress test results for the current user.
+ * Fetches Results for the current user (via their Buggers).
  * Supports pagination via `limit` and `offset` query params.
  * 
- * @returns Array of StressResult records
+ * @returns Array of Result records with their associated Bugger data
  */
 export async function GET(request: NextRequest) {
   const session = await auth();
@@ -151,17 +162,28 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Fetch results for this user
-    const results = await prisma.stressResult.findMany({
-      where: { userId: user.id },
+    // Fetch results for this user's buggers
+    const results = await prisma.result.findMany({
+      where: {
+        bugger: {
+          userId: user.id,
+        },
+      },
+      include: {
+        bugger: true,
+      },
       orderBy: { createdAt: "desc" },
       take: limit,
       skip: offset,
     });
 
     // Get total count for pagination
-    const total = await prisma.stressResult.count({
-      where: { userId: user.id },
+    const total = await prisma.result.count({
+      where: {
+        bugger: {
+          userId: user.id,
+        },
+      },
     });
 
     return NextResponse.json({
@@ -178,4 +200,3 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-

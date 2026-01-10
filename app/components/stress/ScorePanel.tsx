@@ -285,25 +285,21 @@ export function ScorePanel({
    * @param analysisResult - The AI analysis result
    */
   const saveResult = async (analysisResult: AnalyzeResponse) => {
-    if (!stressMetadata) return;
+    if (!stressMetadata?.buggerId) {
+      console.warn("No buggerId found in stressMetadata, skipping result save");
+      return;
+    }
 
     try {
       const response = await fetch("/api/results", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          owner: stressMetadata.owner,
-          repo: stressMetadata.repo,
-          branchName,
+          buggerId: stressMetadata.buggerId,
           grade: scoreRating.grade,
           timeMs,
-          bugCount,
-          stressLevel: stressMetadata.stressLevel,
           startCommitSha: startCommit.sha,
           completeCommitSha: completeCommit.sha,
-          symptoms: stressMetadata.symptoms,
-          filesBuggered: stressMetadata.filesBuggered,
-          changes: stressMetadata.changes,
           analysisSummary: analysisResult.summary,
           analysisIsPerfect: analysisResult.isPerfect,
           analysisFeedback: analysisResult.feedback,
