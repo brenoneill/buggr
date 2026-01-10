@@ -95,18 +95,26 @@ model StressResult {
   grade       String   // "A+", "A", "B", etc.
   timeMs      Int      // Time to complete in milliseconds
   bugCount    Int      // Number of bugs in the challenge
-  stressLevel String   // "easy", "medium", "hard"
+  stressLevel String   // "low", "medium", "high"
 
   // Commit references
   startCommitSha    String
   completeCommitSha String
 
-  // AI Analysis (optional, stored as JSON)
-  analysis    Json?    // Stores the full AnalyzeResponse
+  // Bug details (from StressMetadata)
+  symptoms      String[]  // User-facing symptom descriptions
+  filesBuggered String[]  // Files that were buggered
+  changes       String[]  // Technical descriptions of bugs introduced
+
+  // AI Analysis results
+  analysisSummary   String?   // One-line summary from AI
+  analysisIsPerfect Boolean   @default(false)
+  analysisFeedback  Json?     // Full feedback array from AI
 
   createdAt   DateTime @default(now())
 
   @@index([userId])
   @@index([owner, repo])
+  @@index([createdAt])
 }
 

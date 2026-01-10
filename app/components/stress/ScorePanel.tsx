@@ -279,6 +279,47 @@ export function ScorePanel({
   const bugCount = stressMetadata?.bugCount || 1;
 
   /**
+   * Saves the stress test result to the database.
+   * Called after analysis completes successfully.
+   * 
+   * @param analysisResult - The AI analysis result
+   */
+  const saveResult = async (analysisResult: AnalyzeResponse) => {
+    if (!stressMetadata) return;
+
+    try {
+      const response = await fetch("/api/results", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          owner: stressMetadata.owner,
+          repo: stressMetadata.repo,
+          branchName,
+          grade: scoreRating.grade,
+          timeMs,
+          bugCount,
+          stressLevel: stressMetadata.stressLevel,
+          startCommitSha: startCommit.sha,
+          completeCommitSha: completeCommit.sha,
+          symptoms: stressMetadata.symptoms,
+          filesBuggered: stressMetadata.filesBuggered,
+          changes: stressMetadata.changes,
+          analysisSummary: analysisResult.summary,
+          analysisIsPerfect: analysisResult.isPerfect,
+          analysisFeedback: analysisResult.feedback,
+        }),
+      });
+
+      if (!response.ok) {
+        console.error("Failed to save result:", await response.text());
+      }
+    } catch (error) {
+      // Log but don't fail the UI if saving fails
+      console.error("Error saving result:", error);
+    }
+  };
+
+  /**
    * Handles the analyze code action.
    * Fetches the complete commit's diff and analyzes it for common issues.
    * Shows step-by-step progress during the analysis.
@@ -330,6 +371,9 @@ export function ScorePanel({
       await new Promise((resolve) => setTimeout(resolve, 500));
       
       setAnalysisResult(result);
+      
+      // Save the result to the database
+      await saveResult(result);
     } catch (error) {
       console.error("Error analyzing code:", error);
       setAnalysisError("Failed to analyze code. Please try again.");
