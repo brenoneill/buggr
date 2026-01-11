@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { useQuery } from "@tanstack/react-query";
 import type { GitHubCommit, StressMetadata } from "@/lib/github";
 import type { AnalysisFeedback, AnalyzeResponse } from "@/app/api/github/analyze/route";
 import { formatShortDate } from "@/lib/date";
@@ -12,6 +13,28 @@ import {
   calculateScoreRating,
   DIFFICULTY_CONFIG,
 } from "@/lib/score-config";
+
+/** Response type from the /api/results/[buggerId] endpoint */
+interface ExistingResultResponse {
+  result: {
+    id: string;
+    grade: string;
+    timeMs: number;
+    analysisSummary: string | null;
+    analysisIsPerfect: boolean;
+    analysisFeedback: AnalysisFeedback[] | null;
+    createdAt: string;
+  } | null;
+  bugger: {
+    id: string;
+    owner: string;
+    repo: string;
+    branchName: string;
+    stressLevel: string;
+    bugCount: number;
+    createdAt: string;
+  };
+}
 
 /** Steps shown during code analysis */
 const ANALYSIS_STEPS: LoadingStep[] = [
@@ -245,6 +268,28 @@ export function ScorePanel({
   // Ref to track step progression intervals
   const stepIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Check for existing result in the database
+  const { data: existingData, isLoading: isCheckingExisting } = useQuery<ExistingResultResponse>({
+    queryKey: ["result", stressMetadata?.buggerId],
+    queryFn: async () => {
+      const response = await fetch(`/api/results/${stressMetadata?.buggerId}`);
+      if (!response.ok) throw new Error("Failed to fetch existing result");
+      return response.json();
+    },
+    enabled: !!stressMetadata?.buggerId,
+  });
+
+  // If we found an existing result, populate the analysis state
+  useEffect(() => {
+    if (existingData?.result && !analysisResult) {
+      setAnalysisResult({
+        summary: existingData.result.analysisSummary || "",
+        isPerfect: existingData.result.analysisIsPerfect,
+        feedback: existingData.result.analysisFeedback || [],
+      });
+    }
+  }, [existingData, analysisResult]);
+
   // Trigger entrance animation on mount
   useEffect(() => {
     // Small delay to ensure the component is mounted before animating
@@ -462,8 +507,8 @@ export function ScorePanel({
         <FullScoreCard {...scoreCardProps} />
       )}
 
-      {/* Analyze Button - only when not analyzing and no result yet */}
-      {!analyzing && !analysisResult && (
+      {/* Analyze Button - only when not analyzing, no result yet, and not checking for existing */}
+      {!analyzing && !analysisResult && !isCheckingExisting && (
         <div 
           className={`transition-all duration-500 ease-out ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
           style={{ transitionDelay: "900ms" }}
@@ -477,6 +522,19 @@ export function ScorePanel({
             <SparklesIcon className="h-4 w-4" />
             Analyze Code
           </Button>
+        </div>
+      )}
+
+      {/* Loading state while checking for existing result */}
+      {isCheckingExisting && !analysisResult && (
+        <div 
+          className={`transition-all duration-500 ease-out ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+          style={{ transitionDelay: "900ms" }}
+        >
+          <div className="flex items-center justify-center gap-2 rounded-lg border border-gh-border bg-gh-canvas-subtle p-4">
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-gh-accent border-t-transparent" />
+            <span className="text-sm text-gh-text-muted">Checking for previous results...</span>
+          </div>
         </div>
       )}
 
