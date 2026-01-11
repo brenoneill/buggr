@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/react";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
 import "./globals.css";
 import { NotesProvider } from "@/app/context/NotesContext";
 import { Providers } from "@/app/providers";
@@ -30,11 +31,13 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <Providers>
-          <NotesProvider>
-            {children}
-          </NotesProvider>
-        </Providers>
+        <NuqsAdapter>
+          <Providers>
+            <NotesProvider>
+              {children}
+            </NotesProvider>
+          </Providers>
+        </NuqsAdapter>
         <Analytics />
       </body>
     </html>

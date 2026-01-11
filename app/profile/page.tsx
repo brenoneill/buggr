@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useUser } from "@/app/hooks/useUser";
 import { useBuggers, useResults } from "@/app/hooks/useBuggers";
 import Link from "next/link";
@@ -18,9 +19,22 @@ import { Button } from "@/app/components/inputs/Button";
  * Shows user information, stats, and recent activity.
  */
 export default function ProfilePage() {
+  const router = useRouter();
   const { user, isLoading: userLoading, isError: userError } = useUser();
   const { buggers, isLoading: buggersLoading } = useBuggers({ limit: 5 });
   const { results, isLoading: resultsLoading } = useResults({ limit: 5 });
+
+  /**
+   * Navigate back to the previous page (preserves URL state).
+   * Falls back to dashboard if no history.
+   */
+  const handleGoBack = () => {
+    if (window.history.length > 1) {
+      router.back();
+    } else {
+      router.push("/dashboard");
+    }
+  };
 
   const isLoading = userLoading || buggersLoading || resultsLoading;
 
@@ -45,12 +59,10 @@ export default function ProfilePage() {
         <div className="mx-auto max-w-4xl px-6 py-12">
           <div className="flex flex-col items-center justify-center py-20 gap-4">
             <p className="text-gh-text-muted">Failed to load profile</p>
-            <Link href="/dashboard">
-              <Button variant="secondary">
-                <ArrowRightIcon className="h-4 w-4 rotate-180" />
-                Back to Dashboard
-              </Button>
-            </Link>
+            <Button variant="secondary" onClick={handleGoBack}>
+              <ArrowRightIcon className="h-4 w-4 rotate-180" />
+              Go Back
+            </Button>
           </div>
         </div>
       </div>
@@ -70,19 +82,20 @@ export default function ProfilePage() {
       <div className="relative mx-auto max-w-4xl px-6 py-8">
         {/* Header */}
         <div className="mb-8 flex items-center justify-between">
-          <Link href="/dashboard" className="flex items-center gap-3 transition-opacity hover:opacity-80">
+          <button 
+            onClick={handleGoBack}
+            className="flex items-center gap-3 transition-opacity hover:opacity-80"
+          >
             <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-gh-border bg-gh-canvas-subtle">
               <BuggrIcon className="h-5 w-5 text-white" />
             </div>
             <span className="font-mono text-xl font-bold text-white">Buggr</span>
-          </Link>
+          </button>
           
-          <Link href="/dashboard">
-            <Button variant="secondary" size="sm">
-              <ArrowRightIcon className="h-4 w-4 rotate-180" />
-              Back to Dashboard
-            </Button>
-          </Link>
+          <Button variant="secondary" size="sm" onClick={handleGoBack}>
+            <ArrowRightIcon className="h-4 w-4 rotate-180" />
+            Go Back
+          </Button>
         </div>
 
         {/* Profile Card */}

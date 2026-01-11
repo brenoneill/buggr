@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import type { GitHubRepo, GitHubBranch, GitHubCommit, GitHubCommitDetails, StressMetadata } from "@/lib/github";
 import { fetchStressMetadata } from "@/lib/github";
 import { formatFullDate, generateTimestamp } from "@/lib/date";
-import { useDashboardUrl } from "@/app/hooks/useDashboardUrl";
+import { useDashboardState } from "@/app/hooks/useDashboardState";
 import { useNotes } from "@/app/context/NotesContext";
 import { NotesPanel } from "@/app/components/NotesPanel";
 import { Select } from "@/app/components/inputs/Select";
@@ -38,7 +38,19 @@ interface RepoBranchSelectorProps {
  */
 export function RepoBranchSelector({ repos: initialRepos, accessToken, userName, logoutForm }: RepoBranchSelectorProps) {
   const { addNote, addBranchChange } = useNotes();
-  const { params: urlParams, isInitialized: urlInitialized, updateParams: updateUrlParams, clearParams: clearUrlParams } = useDashboardUrl();
+  
+  // URL state via nuqs - automatically syncs with URL
+  const { 
+    repo: urlRepo, 
+    branch: urlBranch, 
+    commit: urlCommit, 
+    showScore: urlShowScore,
+    setRepo: setUrlRepo,
+    setBranch: setUrlBranch,
+    setCommit: setUrlCommit,
+    setShowScore: setUrlShowScore,
+    clearAll: clearUrlParams,
+  } = useDashboardState();
 
   const [repos, setRepos] = useState<GitHubRepo[]>(initialRepos);
   const [selectedRepo, setSelectedRepo] = useState<GitHubRepo | null>(null);
@@ -74,6 +86,9 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken, userName,
   const [stressMetadata, setStressMetadata] = useState<StressMetadata | null>(null);
   const [loadingMetadata, setLoadingMetadata] = useState(false);
 
+  // Track initialization to prevent duplicate restoration
+  const hasInitialized = useRef(false);
+
   /**
    * Finds a commit with "start" in the message (case-insensitive).
    */
@@ -106,60 +121,85 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken, userName,
 
   /**
    * Initialize state from URL parameters on mount.
+   * nuqs handles the URL sync, we just need to restore component state.
    */
   useEffect(() => {
-    if (!urlInitialized) return;
+    if (hasInitialized.current) return;
+    hasInitialized.current = true;
 
-    // Only run once when URL is first initialized
-    if (selectedRepo) return;
-
-    if (urlParams.repo) {
-      // Find matching repo
-      const repo = initialRepos.find((r) => r.full_name === urlParams.repo);
+    // Restore repo from URL
+    if (urlRepo) {
+      const repo = initialRepos.find((r) => r.full_name === urlRepo);
       if (repo) {
-        // Trigger repo selection which will fetch branches
-        handleRepoSelect(repo).then(() => {
-          // After repo is selected, select branch if provided
-          if (urlParams.branch) {
-            handleBranchSelect(urlParams.branch);
-          }
-        });
+        handleRepoSelect(repo);
       }
     }
 
     // Show score panel if URL param is set
-    if (urlParams.score) {
+    if (urlShowScore) {
       setShowScorePanel(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [urlInitialized]);
+  }, []);
 
   /**
-   * Select commit from URL param after commits are loaded.
+   * Restore branch selection when URL branch changes or branches load.
    */
   useEffect(() => {
-    if (!urlInitialized || !urlParams.commit) return;
-    if (commits.length > 0 && !selectedCommit) {
-      const commit = commits.find((c) => c.sha === urlParams.commit || c.sha.startsWith(urlParams.commit!));
+    if (urlBranch && branches.length > 0 && selectedBranch !== urlBranch) {
+      const branchExists = branches.some((b) => b.name === urlBranch);
+      if (branchExists) {
+        handleBranchSelect(urlBranch);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [urlBranch, branches]);
+
+  /**
+   * Restore commit selection when URL commit changes or commits load.
+   */
+  useEffect(() => {
+    if (urlCommit && commits.length > 0 && !selectedCommit) {
+      const commit = commits.find((c) => c.sha === urlCommit || c.sha.startsWith(urlCommit));
       if (commit) {
         handleCommitSelect(commit);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [commits, urlInitialized, urlParams.commit]);
+  }, [urlCommit, commits]);
 
   /**
-   * Update URL when selections change.
+   * Sync component state to URL when selections change.
    */
   useEffect(() => {
-    if (!urlInitialized) return;
-    updateUrlParams({
-      repo: selectedRepo?.full_name || null,
-      branch: selectedBranch,
-      commit: selectedCommit?.sha.substring(0, 7) || null,
-      score: showScorePanel,
-    });
-  }, [selectedRepo, selectedBranch, selectedCommit, showScorePanel, urlInitialized, updateUrlParams]);
+    // Update URL repo when selection changes
+    const newRepo = selectedRepo?.full_name || null;
+    if (newRepo !== urlRepo) {
+      setUrlRepo(newRepo);
+    }
+  }, [selectedRepo, urlRepo, setUrlRepo]);
+
+  useEffect(() => {
+    // Update URL branch when selection changes
+    if (selectedBranch !== urlBranch) {
+      setUrlBranch(selectedBranch);
+    }
+  }, [selectedBranch, urlBranch, setUrlBranch]);
+
+  useEffect(() => {
+    // Update URL commit when selection changes
+    const newCommit = selectedCommit?.sha.substring(0, 7) || null;
+    if (newCommit !== urlCommit) {
+      setUrlCommit(newCommit);
+    }
+  }, [selectedCommit, urlCommit, setUrlCommit]);
+
+  useEffect(() => {
+    // Update URL showScore when panel state changes
+    if (showScorePanel !== urlShowScore) {
+      setUrlShowScore(showScorePanel);
+    }
+  }, [showScorePanel, urlShowScore, setUrlShowScore]);
 
   /**
    * Fetches branches for the selected repository.

@@ -19,6 +19,9 @@ export {
   type ResultByBuggerResponse,
 } from "./useBuggers";
 
-// Other hooks
+// Dashboard URL state (using nuqs)
+export { useDashboardState } from "./useDashboardState";
+
+// Legacy hook (deprecated - use useDashboardState instead)
 export { useDashboardUrl } from "./useDashboardUrl";
 
