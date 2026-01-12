@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { fetchFileContent, updateFile, createStressMetadata, StressMetadata } from "@/lib/github";
-import { introduceAIStress } from "@/lib/ai-stress";
+import { introduceAIStress, AIStressResult } from "@/lib/ai-stress";
 import { prisma } from "@/lib/prisma";
+import { logTokenUsage, TokenUsageData } from "@/lib/token-usage";
 
 // Maximum file size in lines to process (keeps token usage reasonable)
 const MAX_FILE_LINES_SINGLE = 5000; // If only 1 file, allow up to 5000 lines
@@ -41,6 +42,11 @@ export async function POST(request: NextRequest) {
 
     // Validate context length if provided
     const stressContext = typeof context === "string" ? context.slice(0, 200) : undefined;
+
+    // Look up user early for token usage tracking
+    const user = session.user?.email
+      ? await prisma.user.findUnique({ where: { email: session.user.email } })
+      : null;
     
     // Validate stress level
     const validLevels = ["low", "medium", "high", "custom"] as const;
@@ -79,6 +85,9 @@ export async function POST(request: NextRequest) {
 
     const results: { file: string; success: boolean; changes?: string[]; symptoms?: string[]; error?: string }[] = [];
     const allSymptoms: string[] = [];
+    
+    // Collect token usage from all AI calls for logging after Bugger is created
+    const allUsageData: { usage: TokenUsageData; provider: string; model: string }[] = [];
 
     // Supported file extensions for buggering
     const SUPPORTED_EXTENSIONS = [
@@ -195,13 +204,20 @@ export async function POST(request: NextRequest) {
         const { filePath, content: decodedContent, sha } = selectedFile;
         
         // Use AI to introduce subtle stress with bugs for this file
-        const { content: modifiedContent, changes, symptoms } = await introduceAIStress(
+        const stressResult: AIStressResult = await introduceAIStress(
           decodedContent, 
           filePath, 
           stressContext, 
           stressLevel === "custom" ? "high" : stressLevel, // Use high subtlety for custom mode
           bugsForThisFile
         );
+        
+        const { content: modifiedContent, changes, symptoms, usage, provider, model } = stressResult;
+        
+        // Collect usage data for later logging (after Bugger is created)
+        if (usage) {
+          allUsageData.push({ usage, provider, model });
+        }
 
         // Only update if changes were made
         if (changes.length > 0 && modifiedContent !== decodedContent) {
@@ -265,11 +281,6 @@ export async function POST(request: NextRequest) {
 
       // Save Bugger to database first (so we have the ID for metadata)
       try {
-        // Find user by email from session
-        const user = session.user?.email 
-          ? await prisma.user.findUnique({ where: { email: session.user.email } })
-          : null;
-
         if (user) {
           // Format file changes for the UI (includes per-file change details)
           const fileChanges = successfulResults.map((r) => ({
@@ -296,6 +307,21 @@ export async function POST(request: NextRequest) {
             },
           });
           buggerId = bugger.id;
+          
+          // Now log token usage with buggerId and full context
+          for (const { usage, provider, model } of allUsageData) {
+            await logTokenUsage({
+              userId: user.id,
+              provider,
+              model,
+              usage,
+              operation: "stress",
+              buggerId: bugger.id,
+              stressLevel: effectiveStressLevel,
+              repoOwner: owner,
+              repoName: repo,
+            });
+          }
         }
       } catch (dbError) {
         // Log but don't fail the request if database save fails

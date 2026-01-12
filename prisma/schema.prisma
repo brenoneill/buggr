@@ -31,9 +31,10 @@ model User {
   gitProfileUrl String?   // URL to their profile
 
   // Relations
-  accounts Account[]
-  sessions Session[]
-  buggers  Bugger[]
+  accounts    Account[]
+  sessions    Session[]
+  buggers     Bugger[]
+  tokenUsages TokenUsage[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -152,5 +153,46 @@ model Result {
   createdAt DateTime @default(now())
 
   @@index([createdAt])
+}
+
+// ============================================================================
+// Token Usage Tracking
+// ============================================================================
+
+/// Tracks AI token usage for cost analysis and billing purposes.
+/// Records each AI API call with provider, model, token counts, and estimated cost.
+model TokenUsage {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // AI Provider info
+  provider  String   // "anthropic", "ollama", "openai-compatible"
+  model     String   // "claude-sonnet-4-20250514", "llama3", etc.
+
+  // Token counts from the AI response
+  promptTokens     Int
+  completionTokens Int
+  totalTokens      Int
+
+  // Operation context
+  operation   String   // "stress", "analyze"
+  buggerId    String?  // Link to specific bugger for correlation
+  stressLevel String?  // "low", "medium", "high" - only for stress operations
+
+  // Repository context (for additional analytics)
+  repoOwner   String?  // GitHub owner/org
+  repoName    String?  // Repository name
+
+  // Cost tracking (in cents to avoid floating point issues)
+  // Calculated based on provider pricing at time of call
+  estimatedCostCents Int?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([operation])
+  @@index([buggerId])
 }
 
