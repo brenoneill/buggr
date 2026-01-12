@@ -9,9 +9,12 @@ import {
   ExternalLinkIcon,
   TrophyIcon,
   CheckIcon,
-  ArrowRightIcon
+  ArrowRightIcon,
+  CoinIcon
 } from "@/app/components/icons";
+import { STRESS_LEVEL_COSTS } from "@/lib/stress-costs";
 import { Button } from "@/app/components/inputs/Button";
+import { Container } from "@/app/components/Container";
 
 /**
  * User profile/dashboard page.
@@ -137,20 +140,53 @@ export default function ProfilePage() {
           </div>
         </div>
 
+        {/* Coins Section */}
+        <div className="mb-8 rounded-xl border border-gh-accent/30 bg-gradient-to-r from-gh-accent/10 to-gh-accent/5 p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gh-accent/20">
+                <CoinIcon className="h-8 w-8 text-gh-accent" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gh-text-muted">Your Balance</p>
+                <p className="text-4xl font-bold text-gh-accent">{user.coins}</p>
+                <p className="text-xs text-gh-text-muted">coins available</p>
+              </div>
+            </div>
+            <div className="text-right">
+              <p className="text-xs font-medium text-gh-text-muted mb-2">Challenge Costs</p>
+              <div className="flex flex-col gap-1 text-xs">
+                <div className="flex items-center justify-end gap-2">
+                  <span className="text-gh-text-muted">🌱 Low:</span>
+                  <span className="font-semibold text-green-400">{STRESS_LEVEL_COSTS.low} coins</span>
+                </div>
+                <div className="flex items-center justify-end gap-2">
+                  <span className="text-gh-text-muted">🔥 Medium:</span>
+                  <span className="font-semibold text-yellow-400">{STRESS_LEVEL_COSTS.medium} coins</span>
+                </div>
+                <div className="flex items-center justify-end gap-2">
+                  <span className="text-gh-text-muted">💀 High:</span>
+                  <span className="font-semibold text-red-400">{STRESS_LEVEL_COSTS.high} coins</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Stats Grid */}
         <div className="mb-8 grid grid-cols-3 gap-4">
-          <div className="rounded-lg border border-gh-border bg-gh-canvas-subtle p-4 text-center">
+          <Container className="p-4 text-center">
             <p className="text-3xl font-bold text-white">{user.stats.totalBuggers}</p>
             <p className="mt-1 text-sm text-gh-text-muted">Challenges</p>
-          </div>
-          <div className="rounded-lg border border-gh-border bg-gh-canvas-subtle p-4 text-center">
+          </Container>
+          <Container className="p-4 text-center">
             <p className="text-3xl font-bold text-green-400">{user.stats.completedBuggers}</p>
             <p className="mt-1 text-sm text-gh-text-muted">Completed</p>
-          </div>
-          <div className="rounded-lg border border-gh-border bg-gh-canvas-subtle p-4 text-center">
+          </Container>
+          <Container className="p-4 text-center">
             <p className="text-3xl font-bold text-gh-accent">{completionRate}%</p>
             <p className="mt-1 text-sm text-gh-text-muted">Completion Rate</p>
-          </div>
+          </Container>
         </div>
 
         {/* Recent Activity */}
