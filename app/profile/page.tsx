@@ -12,7 +12,8 @@ import {
   TrophyIcon,
   CheckIcon,
   ArrowRightIcon,
-  CoinIcon
+  CoinIcon,
+  CopyIcon
 } from "@/app/components/icons";
 import { STRESS_LEVEL_COSTS } from "@/lib/stress-costs";
 import { Button } from "@/app/components/inputs/Button";
@@ -45,8 +46,34 @@ export default function ProfilePage() {
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteError, setInviteError] = useState<string | null>(null);
   const [inviteSuccess, setInviteSuccess] = useState<string | null>(null);
+  const [copiedInviteId, setCopiedInviteId] = useState<string | null>(null);
 
   const isLoading = userLoading || buggersLoading || resultsLoading || invitationsLoading;
+
+  /**
+   * Copies invite information to clipboard for sharing with invitee.
+   * @param inviteId - The ID of the invitation
+   * @param email - The invitee's email address
+   */
+  async function handleCopyInvite(inviteId: string, email: string) {
+    const inviteText = `Hey! I've been using Buggr to practice finding bugs in code. It's a fun way to sharpen your debugging skills!\n\nI sent you an invite to ${email}. Check your inbox to get started and we'll both earn bonus coins! 🎉\n\nSign up here: ${window.location.origin}`;
+    
+    try {
+      await navigator.clipboard.writeText(inviteText);
+      setCopiedInviteId(inviteId);
+      setTimeout(() => setCopiedInviteId(null), 2000);
+    } catch {
+      // Fallback for older browsers
+      const textarea = document.createElement("textarea");
+      textarea.value = inviteText;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+      setCopiedInviteId(inviteId);
+      setTimeout(() => setCopiedInviteId(null), 2000);
+    }
+  }
 
   /**
    * Handles sending an invitation to the entered email.
@@ -288,22 +315,39 @@ export default function ProfilePage() {
                     className="flex items-center justify-between rounded-lg border border-gh-border bg-gh-canvas-default px-3 py-2"
                   >
                     <span className="text-sm text-white">{inv.email}</span>
-                    <span
-                      className={`rounded px-2 py-0.5 text-xs font-medium ${
-                        inv.status === "accepted"
-                          ? "bg-green-500/20 text-green-400"
-                          : "bg-yellow-500/20 text-yellow-400"
-                      }`}
-                    >
+                    <div className="flex items-center gap-2">
                       {inv.status === "accepted" ? (
-                        <span className="flex items-center gap-1">
-                          <CheckIcon className="h-3 w-3" />
-                          +{SIGNUP_BONUS_COINS} coins
+                        <span className="rounded bg-green-500/20 px-2 py-0.5 text-xs font-medium text-green-400">
+                          <span className="flex items-center gap-1">
+                            <CheckIcon className="h-3 w-3" />
+                            +{SIGNUP_BONUS_COINS} coins
+                          </span>
                         </span>
                       ) : (
-                        "Pending"
+                        <>
+                          <span className="rounded bg-yellow-500/20 px-2 py-0.5 text-xs font-medium text-yellow-400">
+                            Pending
+                          </span>
+                          <button
+                            onClick={() => handleCopyInvite(inv.id, inv.email)}
+                            className="flex items-center gap-1 rounded bg-gh-canvas-subtle px-2 py-0.5 text-xs font-medium text-gh-text-muted transition-colors hover:bg-gh-border hover:text-white"
+                            title="Copy invite message to share"
+                          >
+                            {copiedInviteId === inv.id ? (
+                              <>
+                                <CheckIcon className="h-3 w-3 text-green-400" />
+                                <span className="text-green-400">Copied!</span>
+                              </>
+                            ) : (
+                              <>
+                                <CopyIcon className="h-3 w-3" />
+                                <span>Copy</span>
+                              </>
+                            )}
+                          </button>
+                        </>
                       )}
-                    </span>
+                    </div>
                   </div>
                 ))}
               </div>

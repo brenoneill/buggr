@@ -501,6 +501,12 @@ CRITICAL RULES:
 5. Bugs must be DETERMINISTIC - same behavior every time with same input
 6. You MAY add helper functions to hide bugs (especially for medium/high stress)
 7. The code must still compile/parse correctly
+8. NEVER say "Unable to implement" - if the code doesn't have the required structure for a bug (e.g., no array with IDs for an "all items show same ID" bug), you MUST ADD the necessary code to enable the bug. For example:
+   - If asked to corrupt array IDs but no array exists: ADD an array with IDs to the code, then introduce the bug
+   - If asked to break a calculation but no calculation exists: ADD a relevant calculation, then break it
+   - If asked to corrupt string display but no strings are displayed: ADD string display code, then corrupt it
+   - The added code should be RELEVANT to the file's purpose and look like a natural addition a developer might make
+   - The bug should then be introduced in this newly added code
 
 MANDATORY BUG REQUIREMENTS:
 - Bugs MUST be CLEARLY VISIBLE breaking changes - users must immediately see something is wrong
@@ -518,6 +524,21 @@ Imagine the code was written by a sloppy developer who:
 - Makes "quick fixes" that break other things
 - Gets confused by their own code
 - Makes typos and doesn't proofread
+
+IMPORTANT - IF CODE STRUCTURE IS MISSING:
+If the code doesn't have the necessary structure to implement a specific bug type, you MUST add that structure yourself. NEVER respond with "Unable to implement" or skip a bug.
+
+Examples of what to do:
+- Bug requires array with IDs, but no array exists: ADD an array of items with IDs (e.g., add a data array, an inventory list, a user list), then introduce the bug in that array
+- Bug requires string display, but no strings are shown: ADD code that displays strings (e.g., labels, names, messages), then corrupt those strings
+- Bug requires calculation, but no math exists: ADD a relevant calculation (e.g., totals, counts, prices), then break that calculation
+- Bug requires form input, but no forms exist: ADD a form or input handler, then introduce the bug there
+
+The added code should:
+1. Be relevant to what the file appears to do (if it's combat code, add combat-related arrays/calculations)
+2. Look like a natural addition a developer would make
+3. Integrate with existing code patterns and styles
+4. Then contain the bug you were asked to introduce
 
 Here is the code to modify:
 
