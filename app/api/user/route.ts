@@ -13,6 +13,8 @@ export interface UserResponse {
   gitProvider: string | null;
   gitUsername: string | null;
   gitProfileUrl: string | null;
+  coins: number;
+  hasUsedInviteBonus: boolean;
   createdAt: string;
   // Stats
   stats: {
@@ -47,6 +49,8 @@ export async function GET() {
       gitProvider: user.gitProvider,
       gitUsername: user.gitUsername,
       gitProfileUrl: user.gitProfileUrl,
+      coins: user.coins,
+      hasUsedInviteBonus: user.hasUsedInviteBonus,
       createdAt: user.createdAt.toISOString(),
       stats: {
         totalBuggers,
