@@ -91,7 +91,8 @@ export async function POST(request: NextRequest) {
         completeCommitSha: body.completeCommitSha,
         analysisSummary: body.analysisSummary,
         analysisIsPerfect: body.analysisIsPerfect ?? false,
-        analysisFeedback: body.analysisFeedback ?? null,
+        // Only include analysisFeedback if provided (Prisma JSON fields can't accept null directly)
+        ...(body.analysisFeedback && { analysisFeedback: body.analysisFeedback }),
       },
     });
 
