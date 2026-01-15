@@ -1,6 +1,6 @@
 # 🚀 Getting Started with Buggr 
 
-A step-by-step guide to buggering up your own repository.
+A step-by-step guide to buggering up your own repository. 
 
 ---
 
