@@ -116,6 +116,7 @@ export function NotesPanel() {
   const [showAllNotifications, setShowAllNotifications] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [activeSections, setActiveSections] = useState<Record<string, ActiveSection>>({});
+  const [pendingReads, setPendingReads] = useState<Set<string>>(new Set());
 
   const { isPanelOpen, openPanel, closePanel } = useNotes();
 
@@ -165,11 +166,34 @@ export function NotesPanel() {
     return noteUnread || changeUnread;
   }
 
+  function addPending(ids: string[]) {
+    setPendingReads((prev) => {
+      const next = new Set(prev);
+      ids.forEach((id) => next.add(id));
+      return next;
+    });
+  }
+
+  function removePending(ids: string[]) {
+    setPendingReads((prev) => {
+      const next = new Set(prev);
+      ids.forEach((id) => next.delete(id));
+      return next;
+    });
+  }
+
   /**
    * Handles marking a single combined notification (note + changes) as read.
    */
   function handleMarkNotificationRead(id: string) {
-    markAllRead.mutate({ ids: [id], type: "both" });
+    const ids = [id];
+    addPending(ids);
+    markAllRead.mutate(
+      { ids, type: "both" },
+      {
+        onSettled: () => removePending(ids),
+      },
+    );
   }
 
   /**
@@ -181,7 +205,13 @@ export function NotesPanel() {
       .map((notification) => notification.id);
 
     if (unreadIds.length > 0) {
-      markAllRead.mutate({ ids: unreadIds, type: "both" });
+      addPending(unreadIds);
+      markAllRead.mutate(
+        { ids: unreadIds, type: "both" },
+        {
+          onSettled: () => removePending(unreadIds),
+        },
+      );
     }
   }
 
@@ -337,6 +367,7 @@ export function NotesPanel() {
                 const branchUrl = getBranchUrl(repoName, branchName, repoOwner);
                 const activeSection = getActiveSection(notification.id);
                 const unread = isNotificationUnread(notification);
+                const isPending = pendingReads.has(notification.id);
 
                 return (
                   <div
@@ -362,10 +393,15 @@ export function NotesPanel() {
                         {unread && (
                           <button
                             onClick={() => handleMarkNotificationRead(notification.id)}
-                            className="rounded p-1 text-gh-text-muted transition-colors hover:bg-gh-border hover:text-white"
+                            className="rounded p-1 text-gh-text-muted transition-colors hover:bg-gh-border hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+                            disabled={isPending}
                             title="Mark as read"
                           >
-                            <CheckIcon className="h-3.5 w-3.5" />
+                            {isPending ? (
+                              <span className="block h-3.5 w-3.5 animate-spin rounded-full border-2 border-gh-accent/30 border-t-gh-accent" />
+                            ) : (
+                              <CheckIcon className="h-3.5 w-3.5" />
+                            )}
                           </button>
                         )}
                       </div>
