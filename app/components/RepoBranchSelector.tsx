@@ -921,7 +921,6 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken, userName,
               {!showCreateBranch && (
                 <Button
                   variant="danger"
-                  disabled={user?.coins !== undefined && user.coins < STRESS_LEVEL_COSTS["low"]}
                   onClick={() => {
                     setShowCreateBranch(true);
                     setTimestamp(generateTimestamp());
