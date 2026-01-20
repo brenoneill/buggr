@@ -76,7 +76,7 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken, userName,
   const [showCreateBranch, setShowCreateBranch] = useState(false);
   const [branchSuffix, setBranchSuffix] = useState("");
   const [stressContext, setStressContext] = useState("");
-  const [stressLevel, setStressLevel] = useState<"low" | "medium" | "high" | "custom">("medium");
+  const [stressLevel, setStressLevel] = useState<"low" | "medium" | "high" | "custom">("low");
   const [customFilesCount, setCustomFilesCount] = useState(1);
   const [customBugCount, setCustomBugCount] = useState(1);
   const [creatingBranch, setCreatingBranch] = useState(false);
@@ -921,7 +921,7 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken, userName,
               {!showCreateBranch && (
                 <Button
                   variant="danger"
-                  disabled={user?.coins !== undefined && user.coins < STRESS_LEVEL_COSTS[stressLevel]}
+                  disabled={user?.coins !== undefined && user.coins < STRESS_LEVEL_COSTS["low"]}
                   onClick={() => {
                     setShowCreateBranch(true);
                     setTimestamp(generateTimestamp());
