@@ -2,10 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { fetchBranchCommits } from "@/lib/github";
 
+/** Maximum commits to fetch per branch */
+const MAX_COMMITS = 30;
+
 /**
  * GET /api/github/commits
  * 
- * Fetches the 10 most recent commits for a specific branch.
+ * Fetches the 30 most recent commits for a specific branch.
  * Requires owner, repo, and branch query parameters.
  */
 export async function GET(request: NextRequest) {
@@ -31,7 +34,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const commits = await fetchBranchCommits(session.accessToken, owner, repo, branch, 10);
+    const commits = await fetchBranchCommits(session.accessToken, owner, repo, branch, MAX_COMMITS);
     return NextResponse.json(commits);
   } catch (error) {
     console.error("Error fetching commits:", error);

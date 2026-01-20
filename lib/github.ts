@@ -136,19 +136,22 @@ export async function fetchUserRepos(accessToken: string): Promise<GitHubRepo[]>
 
 /**
  * Fetches branches for a specific repository.
+ * Limited to prevent excessive API calls on large repos.
  * 
  * @param accessToken - GitHub OAuth access token
  * @param owner - Repository owner (username or org)
  * @param repo - Repository name
+ * @param limit - Maximum number of branches to fetch (default: 30)
  * @returns Array of branch objects
  */
 export async function fetchRepoBranches(
   accessToken: string,
   owner: string,
-  repo: string
+  repo: string,
+  limit: number = 30
 ): Promise<GitHubBranch[]> {
   const response = await fetch(
-    `${GITHUB_API_BASE}/repos/${owner}/${repo}/branches?per_page=100`,
+    `${GITHUB_API_BASE}/repos/${owner}/${repo}/branches?per_page=${limit}`,
     {
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -166,12 +169,13 @@ export async function fetchRepoBranches(
 
 /**
  * Fetches the most recent commits for a specific branch.
+ * Limited to prevent excessive API calls on large repos.
  * 
  * @param accessToken - GitHub OAuth access token
  * @param owner - Repository owner (username or org)
  * @param repo - Repository name
  * @param branch - Branch name
- * @param limit - Number of commits to fetch (default: 10)
+ * @param limit - Number of commits to fetch (default: 30)
  * @returns Array of commit objects
  */
 export async function fetchBranchCommits(
@@ -179,7 +183,7 @@ export async function fetchBranchCommits(
   owner: string,
   repo: string,
   branch: string,
-  limit: number = 10
+  limit: number = 30
 ): Promise<GitHubCommit[]> {
   const response = await fetch(
     `${GITHUB_API_BASE}/repos/${owner}/${repo}/commits?sha=${encodeURIComponent(branch)}&per_page=${limit}`,
