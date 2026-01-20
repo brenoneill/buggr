@@ -43,4 +43,8 @@ export { useDashboardState } from "./useDashboardState";
 export { useDashboardUrl } from "./useDashboardUrl";
 
 // RepoBranchSelector hook
-export { useRepoBranchSelector, type UseRepoBranchSelectorReturn } from "./useRepoBranchSelector";
+export { 
+  useRepoBranchSelector, 
+  type UseRepoBranchSelectorReturn,
+  type BranchBuggerInfo,
+} from "./useRepoBranchSelector";

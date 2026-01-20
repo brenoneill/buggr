@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { GitHubRepo, GitHubBranch, GitHubCommit, GitHubCommitDetails, StressMetadata } from "@/lib/github";
 import { fetchStressMetadata } from "@/lib/github";
@@ -8,8 +8,26 @@ import { generateTimestamp } from "@/lib/date";
 import { useDashboardState } from "@/app/hooks/useDashboardState";
 import { notificationsQueryKey } from "@/app/hooks/useNotifications";
 import { useUser, userQueryKey } from "@/app/hooks/useUser";
+import { useBuggers, type Bugger } from "@/app/hooks/useBuggers";
 import { useNotes } from "@/app/context/NotesContext";
 import { LOADING_STEPS } from "@/app/components/stress/loading-steps";
+
+/**
+ * Information about a branch's bugger status.
+ * Used to show analysis status on branch cards.
+ */
+export interface BranchBuggerInfo {
+  /** Whether this branch is a buggered branch */
+  hasBugger: boolean;
+  /** The bugger's grade if analysis was completed */
+  grade: string | null;
+  /** Whether analysis has been completed */
+  hasAnalysis: boolean;
+  /** The stress level used */
+  stressLevel: string | null;
+  /** The bugger ID for linking */
+  buggerId: string | null;
+}
 
 export interface UseRepoBranchSelectorProps {
   initialRepos: GitHubRepo[];
@@ -94,6 +112,9 @@ export interface UseRepoBranchSelectorReturn {
 
   // User
   user: ReturnType<typeof useUser>["user"];
+
+  // Buggers
+  branchBuggerMap: Map<string, BranchBuggerInfo>;
 }
 
 /**
@@ -111,6 +132,7 @@ export function useRepoBranchSelector({
   const { openPanel } = useNotes();
   const queryClient = useQueryClient();
   const { user } = useUser();
+  const { buggers } = useBuggers({ limit: 100 });
 
   // URL state via nuqs
   const {
@@ -179,6 +201,34 @@ export function useRepoBranchSelector({
   );
 
   const canCheckScore = Boolean(startCommit && completeCommit);
+
+  /**
+   * Creates a map from branch name to bugger info for the current repo.
+   * Allows BranchCard to display analysis status and grades.
+   */
+  const branchBuggerMap = useMemo(() => {
+    const map = new Map<string, BranchBuggerInfo>();
+    
+    if (!selectedRepo || buggers.length === 0) return map;
+    
+    // Filter buggers for the current repo
+    const repoBuggers = buggers.filter(
+      (b) => b.owner === selectedRepo.owner.login && b.repo === selectedRepo.name
+    );
+    
+    // Map each bugger's branchName to its info
+    for (const bugger of repoBuggers) {
+      map.set(bugger.branchName, {
+        hasBugger: true,
+        grade: bugger.result?.grade ?? bugger.grade ?? null,
+        hasAnalysis: Boolean(bugger.result),
+        stressLevel: bugger.stressLevel,
+        buggerId: bugger.id,
+      });
+    }
+    
+    return map;
+  }, [selectedRepo, buggers]);
 
   // ============================================
   // Handlers
@@ -816,5 +866,8 @@ export function useRepoBranchSelector({
 
     // User
     user,
+
+    // Buggers
+    branchBuggerMap,
   };
 }

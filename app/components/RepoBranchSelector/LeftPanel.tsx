@@ -1,6 +1,7 @@
 "use client";
 
 import type { GitHubRepo, GitHubBranch, GitHubCommit } from "@/lib/github";
+import type { BranchBuggerInfo } from "@/app/hooks/useRepoBranchSelector";
 import { NotesPanel } from "@/app/components/NotesPanel";
 import { Select } from "@/app/components/inputs/Select";
 import { Button } from "@/app/components/inputs/Button";
@@ -48,6 +49,9 @@ interface LeftPanelProps {
   // Actions
   onClearSelection: () => void;
   onForkSuccess: (forkedRepo: GitHubRepo) => void;
+
+  // Bugger data for branches
+  branchBuggerMap: Map<string, BranchBuggerInfo>;
 }
 
 /**
@@ -109,6 +113,7 @@ export function LeftPanel({
   error,
   onClearSelection,
   onForkSuccess,
+  branchBuggerMap,
 }: LeftPanelProps) {
   /**
    * Renders the header section with logo and notes panel.
@@ -210,6 +215,7 @@ export function LeftPanel({
                 branch={branch}
                 isSelected={selectedBranch === branch.name}
                 onClick={() => onBranchSelect(branch.name)}
+                buggerInfo={branchBuggerMap.get(branch.name)}
               />
             ))}
           </Container>

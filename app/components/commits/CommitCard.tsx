@@ -83,4 +83,3 @@ export function CommitCard({ commit, isSelected, onClick }: CommitCardProps) {
     </button>
   );
 }
-
