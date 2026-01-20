@@ -7,7 +7,8 @@ import { formatShortDate } from "@/lib/date";
 import { Button } from "@/app/components/inputs/Button";
 import { ToggleGroup } from "@/app/components/inputs/ToggleGroup";
 import { LoadingProgress, LoadingStep } from "@/app/components/stress/LoadingProgress";
-import { CloseIcon, BuggrIcon, SparklesIcon, CheckIcon, InfoIcon, LightbulbIcon, TrophyIcon } from "@/app/components/icons";
+import { Card } from "@/app/components/Card";
+import { CloseIcon, BuggrIcon, SparklesIcon, CheckIcon, InfoIcon, LightbulbIcon, TrophyIcon, DocumentIcon, FolderIcon } from "@/app/components/icons";
 import {
   SCORE_RATINGS,
   DIFFICULTY_CONFIG,
@@ -327,6 +328,373 @@ function FullScoreCard({
   );
 }
 
+// =============================================================================
+// Task Panel Helper Components
+// =============================================================================
+
+/** Props for section header component */
+interface SectionHeaderProps {
+  icon: React.ReactNode;
+  title: string;
+}
+
+/**
+ * Renders a consistent section header with icon and title.
+ * 
+ * @param props - Section header properties
+ * @returns JSX element for the section header
+ */
+function SectionHeader({ icon, title }: SectionHeaderProps) {
+  return (
+    <h3 className="flex items-center gap-2 text-xs font-semibold tracking-wide text-gh-text-muted uppercase">
+      {icon}
+      {title}
+    </h3>
+  );
+}
+
+/** Props for Bug Report section */
+interface BugReportSectionProps {
+  symptoms: string[];
+}
+
+/**
+ * Renders the Bug Report section showing user-facing symptom descriptions.
+ * 
+ * @param props - Bug report properties containing symptoms array
+ * @returns JSX element for the bug report section
+ */
+function BugReportSection({ symptoms }: BugReportSectionProps) {
+  return (
+    <div className="space-y-2">
+      <SectionHeader icon={<span className="text-sm">🐛</span>} title="Bug Report" />
+      <Card variant="default" padded className="p-3">
+        <ul className="space-y-2">
+          {symptoms.map((symptom, index) => (
+            <li
+              key={index}
+              className="flex items-start gap-2 text-sm text-gh-text"
+            >
+              <span className="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-gh-danger-fg" />
+              {symptom}
+            </li>
+          ))}
+        </ul>
+      </Card>
+    </div>
+  );
+}
+
+/** Props for Files Modified section */
+interface FilesModifiedSectionProps {
+  files: string[];
+}
+
+/**
+ * Renders the Files Modified section showing which files were buggered.
+ * 
+ * @param props - Files modified properties containing files array
+ * @returns JSX element for the files modified section
+ */
+function FilesModifiedSection({ files }: FilesModifiedSectionProps) {
+  return (
+    <div className="space-y-2">
+      <SectionHeader icon={<FolderIcon className="h-3.5 w-3.5" />} title="Files Modified" />
+      <div className="space-y-2">
+        {files.map((file, index) => (
+          <Card key={index} variant="default" padded={false} className="p-2 text-xs">
+            <code className="font-mono text-gh-accent">{file}</code>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** Props for Changes Made (Spoiler) section */
+interface ChangesMadeSectionProps {
+  changes: string[];
+}
+
+/**
+ * Renders the Changes Made section showing technical descriptions of bugs.
+ * Styled as a spoiler with warning colors.
+ * 
+ * @param props - Changes made properties containing changes array
+ * @returns JSX element for the changes made section
+ */
+function ChangesMadeSection({ changes }: ChangesMadeSectionProps) {
+  return (
+    <div className="space-y-2">
+      <SectionHeader icon={<span className="text-sm">⚠️</span>} title="Changes Made (Spoiler)" />
+      {/* Using custom styling for warning/spoiler appearance since Card doesn't have a warning variant */}
+      <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/5 p-3">
+        <ul className="space-y-2">
+          {changes.map((change, index) => (
+            <li
+              key={index}
+              className="flex items-start gap-2 text-sm text-gh-text-muted"
+            >
+              <span className="mt-1 text-yellow-500">•</span>
+              {change}
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+}
+
+/** Props for the Task Details panel */
+interface TaskDetailsPanelProps {
+  stressMetadata: StressMetadata;
+  isVisible: boolean;
+}
+
+/**
+ * Renders the complete Task Details panel with Bug Report, Files Modified, and Changes Made sections.
+ * 
+ * @param props - Task details panel properties
+ * @returns JSX element for the task details panel
+ */
+function TaskDetailsPanel({ stressMetadata, isVisible }: TaskDetailsPanelProps) {
+  return (
+    <div 
+      className={`space-y-4 transition-all duration-500 ease-out ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
+      style={{ transitionDelay: "100ms" }}
+    >
+      <BugReportSection symptoms={stressMetadata.symptoms} />
+      <FilesModifiedSection files={stressMetadata.filesBuggered} />
+      <ChangesMadeSection changes={stressMetadata.changes} />
+    </div>
+  );
+}
+
+// =============================================================================
+// Analysis Panel Helper Components
+// =============================================================================
+
+/** Props for Analysis Summary section */
+interface AnalysisSummarySectionProps {
+  summary: string;
+  isPerfect: boolean;
+  isRevealed: boolean;
+}
+
+/**
+ * Renders the Analysis Summary card.
+ * Uses success styling when the fix is perfect.
+ * 
+ * @param props - Analysis summary properties
+ * @returns JSX element for the analysis summary
+ */
+function AnalysisSummarySection({ summary, isPerfect, isRevealed }: AnalysisSummarySectionProps) {
+  return (
+    <Card 
+      variant={isPerfect ? "success" : "default"}
+      padded={false}
+      className={`p-3 transition-all duration-500 ease-out ${isRevealed ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-4 scale-95"}`}
+      style={{ transitionDelay: "100ms" }}
+    >
+      <p className={`text-sm font-medium ${isPerfect ? "text-green-400" : "text-white"}`}>
+        {summary}
+      </p>
+    </Card>
+  );
+}
+
+/** Props for a single feedback item */
+interface FeedbackItemProps {
+  item: AnalysisFeedback;
+  index: number;
+  isRevealed: boolean;
+  getFeedbackIcon: (type: AnalysisFeedback["type"]) => React.ReactNode;
+  getFeedbackBgColor: (type: AnalysisFeedback["type"]) => string;
+}
+
+/**
+ * Renders a single feedback item card with icon, title, message, and optional improvement suggestion.
+ * 
+ * @param props - Feedback item properties
+ * @returns JSX element for the feedback item
+ */
+function FeedbackItem({ item, index, isRevealed, getFeedbackIcon, getFeedbackBgColor }: FeedbackItemProps) {
+  return (
+    <div 
+      className={`rounded-lg border p-3 transition-all duration-500 ease-out ${getFeedbackBgColor(item.type)} ${isRevealed ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4"}`}
+      style={{ transitionDelay: `${200 + index * 100}ms` }}
+    >
+      <div className="flex items-start gap-2">
+        <div className="mt-0.5 shrink-0">
+          {getFeedbackIcon(item.type)}
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium text-white">{item.title}</p>
+          <p className="text-xs text-gh-text-muted mt-1">{item.message}</p>
+          {item.improvement && (
+            <Card variant="inset" padded={false} className="mt-2 p-2 bg-gh-canvas-default/50">
+              <p className="text-xs font-medium text-purple-300 mb-1">💡 Better approach:</p>
+              <p className="text-xs text-gh-text-muted">{item.improvement}</p>
+            </Card>
+          )}
+          {item.file && (
+            <code className="mt-2 inline-block rounded bg-gh-canvas-default px-1.5 py-0.5 font-mono text-xs text-gh-accent">
+              {item.file}
+            </code>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Props for the Analysis Results panel */
+interface AnalysisResultsPanelProps {
+  analysisResult: AnalyzeResponse;
+  isRevealed: boolean;
+  getFeedbackIcon: (type: AnalysisFeedback["type"]) => React.ReactNode;
+  getFeedbackBgColor: (type: AnalysisFeedback["type"]) => string;
+}
+
+/**
+ * Renders the complete Analysis Results panel with summary and feedback items.
+ * 
+ * @param props - Analysis results panel properties
+ * @returns JSX element for the analysis results panel
+ */
+function AnalysisResultsPanel({ 
+  analysisResult, 
+  isRevealed,
+  getFeedbackIcon,
+  getFeedbackBgColor,
+}: AnalysisResultsPanelProps) {
+  return (
+    <div className="space-y-3">
+      <h3 
+        className={`text-xs font-semibold tracking-wide text-gh-text-muted uppercase transition-all duration-500 ease-out ${isRevealed ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2"}`}
+      >
+        Analysis
+      </h3>
+      
+      <AnalysisSummarySection 
+        summary={analysisResult.summary} 
+        isPerfect={analysisResult.isPerfect} 
+        isRevealed={isRevealed} 
+      />
+
+      {analysisResult.feedback.length > 0 && (
+        <div className="space-y-2">
+          {analysisResult.feedback.map((item, index) => (
+            <FeedbackItem
+              key={index}
+              item={item}
+              index={index}
+              isRevealed={isRevealed}
+              getFeedbackIcon={getFeedbackIcon}
+              getFeedbackBgColor={getFeedbackBgColor}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// =============================================================================
+// Timeline Panel Helper Components
+// =============================================================================
+
+/** Props for a timeline commit item */
+interface TimelineCommitItemProps {
+  commit: GitHubCommit;
+  icon: string;
+  iconBgColor: string;
+  isVisible: boolean;
+  transitionDelay: string;
+}
+
+/**
+ * Renders a single commit item in the timeline.
+ * 
+ * @param props - Timeline commit item properties
+ * @returns JSX element for the timeline commit item
+ */
+function TimelineCommitItem({ commit, icon, iconBgColor, isVisible, transitionDelay }: TimelineCommitItemProps) {
+  return (
+    <Card 
+      variant="default"
+      padded={false}
+      className={`flex items-center gap-3 p-3 transition-all duration-500 ease-out ${isVisible ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4"}`}
+      style={{ transitionDelay }}
+    >
+      <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${iconBgColor}`}>
+        <span className="text-sm">{icon}</span>
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-medium text-white truncate">
+          {commit.commit.message.split("\n")[0]}
+        </p>
+        <p className="text-xs text-gh-text-muted">
+          {formatShortDate(commit.commit.author.date)}
+        </p>
+      </div>
+      <code className="shrink-0 rounded bg-gh-canvas-default px-2 py-0.5 font-mono text-xs text-gh-accent">
+        {commit.sha.substring(0, 7)}
+      </code>
+    </Card>
+  );
+}
+
+/** Props for the Timeline panel */
+interface TimelinePanelProps {
+  startCommit: GitHubCommit;
+  completeCommit: GitHubCommit;
+  isVisible: boolean;
+}
+
+/**
+ * Renders the Timeline panel showing start and complete commits.
+ * 
+ * @param props - Timeline panel properties
+ * @returns JSX element for the timeline panel
+ */
+function TimelinePanel({ startCommit, completeCommit, isVisible }: TimelinePanelProps) {
+  return (
+    <div 
+      className={`space-y-3 transition-all duration-500 ease-out ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
+      style={{ transitionDelay: "1000ms" }}
+    >
+      <h3 className="text-xs font-semibold tracking-wide text-gh-text-muted uppercase">Timeline</h3>
+      
+      <div className="space-y-2">
+        <TimelineCommitItem
+          commit={startCommit}
+          icon="🚀"
+          iconBgColor="bg-blue-500/20"
+          isVisible={isVisible}
+          transitionDelay="1100ms"
+        />
+
+        {/* Connector */}
+        <div className="flex justify-center">
+          <div 
+            className={`w-0.5 bg-gh-border transition-all duration-300 ease-out ${isVisible ? "h-4" : "h-0"}`}
+            style={{ transitionDelay: "1200ms" }}
+          />
+        </div>
+
+        <TimelineCommitItem
+          commit={completeCommit}
+          icon="✅"
+          iconBgColor="bg-green-500/20"
+          isVisible={isVisible}
+          transitionDelay="1250ms"
+        />
+      </div>
+    </div>
+  );
+}
+
 export function ScorePanel({
   startCommit,
   completeCommit,
@@ -339,7 +707,7 @@ export function ScorePanel({
   const [analysisStep, setAnalysisStep] = useState(0);
   const [analysisResult, setAnalysisResult] = useState<AnalyzeResponse | null>(null);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
-  const [showAnalysisView, setShowAnalysisView] = useState(true);
+  const [activeView, setActiveView] = useState<"analysis" | "score" | "task">("analysis");
   const [analysisRevealed, setAnalysisRevealed] = useState(false);
   
   // Ref to track step progression intervals
@@ -581,8 +949,8 @@ export function ScorePanel({
     isVisible,
   };
 
-  // Whether to show the analysis/slim view (during loading or when viewing results)
-  const showingAnalysisMode = analyzing || (analysisResult && showAnalysisView);
+  // Whether to show the slim card (during analysis loading, or when viewing analysis/task results)
+  const showSlimCard = analyzing || (analysisResult && activeView !== "score");
 
   return (
     <div className={`flex flex-1 h-full min-h-0 flex-col overflow-hidden pt-10 transition-all duration-500 ease-out ${isVisible ? "opacity-100" : "opacity-0"}`}>
@@ -593,10 +961,11 @@ export function ScorePanel({
           <ToggleGroup
             options={[
               { value: "analysis", label: "Analysis", icon: SparklesIcon },
+              { value: "task", label: "Task", icon: DocumentIcon },
               { value: "score", label: "Score", icon: TrophyIcon },
             ]}
-            value={showAnalysisView ? "analysis" : "score"}
-            onChange={(val) => setShowAnalysisView(val === "analysis")}
+            value={activeView}
+            onChange={(val) => setActiveView(val as "analysis" | "score" | "task")}
           />
         )}
 
@@ -639,7 +1008,7 @@ export function ScorePanel({
           </div>
         ) : !hasGrade && !analyzing ? (
           <TimeOnlyCard {...timeOnlyCardProps} />
-        ) : hasGrade && showingAnalysisMode ? (
+        ) : hasGrade && showSlimCard ? (
           <SlimScoreCard {...scoreCardProps} />
         ) : hasGrade ? (
           <FullScoreCard {...scoreCardProps} />
@@ -686,7 +1055,7 @@ export function ScorePanel({
       {/* Scrollable Content Section - Analysis/Timeline */}
       <div className="flex-1 min-h-0 overflow-y-auto space-y-4 pb-2">
         {/* Loading Progress - shown in analysis view while analyzing */}
-        {analyzing && showAnalysisView && (
+        {analyzing && activeView === "analysis" && (
           <LoadingProgress
             steps={ANALYSIS_STEPS}
             currentStep={analysisStep}
@@ -703,122 +1072,27 @@ export function ScorePanel({
         )}
 
         {/* Analysis Results - shown when analysis exists and analysis view is active */}
-        {analysisResult && showAnalysisView && (
-          <div className="space-y-3">
-            {/* Header */}
-            <h3 
-              className={`text-xs font-semibold tracking-wide text-gh-text-muted uppercase transition-all duration-500 ease-out ${analysisRevealed ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2"}`}
-            >
-              Analysis
-            </h3>
-            
-            {/* Summary */}
-            <div 
-              className={`rounded-lg border p-3 transition-all duration-500 ease-out ${analysisResult.isPerfect ? "border-green-500/30 bg-green-500/10" : "border-gh-border bg-gh-canvas-subtle"} ${analysisRevealed ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-4 scale-95"}`}
-              style={{ transitionDelay: "100ms" }}
-            >
-              <p className={`text-sm font-medium ${analysisResult.isPerfect ? "text-green-400" : "text-white"}`}>
-                {analysisResult.summary}
-              </p>
-            </div>
+        {analysisResult && activeView === "analysis" && (
+          <AnalysisResultsPanel
+            analysisResult={analysisResult}
+            isRevealed={analysisRevealed}
+            getFeedbackIcon={getFeedbackIcon}
+            getFeedbackBgColor={getFeedbackBgColor}
+          />
+        )}
 
-            {/* Feedback Items */}
-            {analysisResult.feedback.length > 0 && (
-              <div className="space-y-2">
-                {analysisResult.feedback.map((item, index) => (
-                  <div 
-                    key={index}
-                    className={`rounded-lg border p-3 transition-all duration-500 ease-out ${getFeedbackBgColor(item.type)} ${analysisRevealed ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4"}`}
-                    style={{ transitionDelay: `${200 + index * 100}ms` }}
-                  >
-                    <div className="flex items-start gap-2">
-                      <div className="mt-0.5 shrink-0">
-                        {getFeedbackIcon(item.type)}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-white">{item.title}</p>
-                        <p className="text-xs text-gh-text-muted mt-1">{item.message}</p>
-                        {/* Show improvement suggestion for tips */}
-                        {item.improvement && (
-                          <div className="mt-2 rounded-md bg-gh-canvas-default/50 p-2">
-                            <p className="text-xs font-medium text-purple-300 mb-1">💡 Better approach:</p>
-                            <p className="text-xs text-gh-text-muted">{item.improvement}</p>
-                          </div>
-                        )}
-                        {item.file && (
-                          <code className="mt-2 inline-block rounded bg-gh-canvas-default px-1.5 py-0.5 font-mono text-xs text-gh-accent">
-                            {item.file}
-                          </code>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+        {/* Task Details - shown when task view is active */}
+        {activeView === "task" && stressMetadata && (
+          <TaskDetailsPanel stressMetadata={stressMetadata} isVisible={isVisible} />
         )}
 
         {/* Timeline - shown when no analysis OR when score view is active */}
-        {(!analysisResult || !showAnalysisView) && (
-        <div 
-          className={`space-y-3 transition-all duration-500 ease-out ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
-          style={{ transitionDelay: "1000ms" }}
-        >
-          <h3 className="text-xs font-semibold tracking-wide text-gh-text-muted uppercase">Timeline</h3>
-          
-          <div className="space-y-2">
-            {/* Start */}
-            <div 
-              className={`flex items-center gap-3 rounded-lg border border-gh-border bg-gh-canvas-subtle p-3 transition-all duration-500 ease-out ${isVisible ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4"}`}
-              style={{ transitionDelay: "1100ms" }}
-            >
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-500/20">
-                <span className="text-sm">🚀</span>
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-white truncate">
-                  {startCommit.commit.message.split("\n")[0]}
-                </p>
-                <p className="text-xs text-gh-text-muted">
-                  {formatShortDate(startCommit.commit.author.date)}
-                </p>
-              </div>
-              <code className="shrink-0 rounded bg-gh-canvas-default px-2 py-0.5 font-mono text-xs text-gh-accent">
-                {startCommit.sha.substring(0, 7)}
-              </code>
-            </div>
-
-            {/* Connector */}
-            <div className="flex justify-center">
-              <div 
-                className={`w-0.5 bg-gh-border transition-all duration-300 ease-out ${isVisible ? "h-4" : "h-0"}`}
-                style={{ transitionDelay: "1200ms" }}
-              />
-            </div>
-
-            {/* Complete */}
-            <div 
-              className={`flex items-center gap-3 rounded-lg border border-gh-border bg-gh-canvas-subtle p-3 transition-all duration-500 ease-out ${isVisible ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4"}`}
-              style={{ transitionDelay: "1250ms" }}
-            >
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-green-500/20">
-                <span className="text-sm">✅</span>
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-white truncate">
-                  {completeCommit.commit.message.split("\n")[0]}
-                </p>
-                <p className="text-xs text-gh-text-muted">
-                  {formatShortDate(completeCommit.commit.author.date)}
-                </p>
-              </div>
-              <code className="shrink-0 rounded bg-gh-canvas-default px-2 py-0.5 font-mono text-xs text-gh-accent">
-                {completeCommit.sha.substring(0, 7)}
-              </code>
-            </div>
-          </div>
-        </div>
+        {(!analysisResult || activeView === "score") && (
+          <TimelinePanel
+            startCommit={startCommit}
+            completeCommit={completeCommit}
+            isVisible={isVisible}
+          />
         )}
       </div>
 
