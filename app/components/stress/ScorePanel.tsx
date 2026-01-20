@@ -360,11 +360,12 @@ interface BugReportSectionProps {
 
 /**
  * Renders the Bug Report section showing user-facing symptom descriptions.
+ * Exported for reuse in commit view when viewing a buggr branch.
  * 
  * @param props - Bug report properties containing symptoms array
  * @returns JSX element for the bug report section
  */
-function BugReportSection({ symptoms }: BugReportSectionProps) {
+export function BugReportSection({ symptoms }: BugReportSectionProps) {
   return (
     <div className="space-y-2">
       <SectionHeader icon={<span className="text-sm">🐛</span>} title="Bug Report" />

@@ -20,7 +20,7 @@ import { Container } from "@/app/components/Container";
 import { CoinsUpsell } from "@/app/components/CoinsUpsell";
 import { CreateBranchForm } from "@/app/components/stress/CreateBranchForm";
 import { BranchSuccessCard } from "@/app/components/stress/BranchSuccessCard";
-import { ScorePanel } from "@/app/components/stress/ScorePanel";
+import { ScorePanel, BugReportSection } from "@/app/components/stress/ScorePanel";
 import { PublicReposList } from "@/app/components/PublicReposList";
 import { GitHubIcon, CloseIcon, TrashIcon, DocumentIcon, CheckIcon, CopyIcon, ExternalLinkIcon, TrophyIcon, BuggrIcon, ChevronDownIcon, CoinIcon } from "@/app/components/icons";
 import { InvitePromptModal } from "@/app/components/InvitePromptModal";
@@ -889,6 +889,13 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken, userName,
               </div>
               <p className="text-sm text-white">{selectedCommit.commit.message.split("\n")[0]}</p>
             </div>
+
+            {/* Task Panel - shown on buggr branches above file changes */}
+            {stressMetadata?.symptoms && stressMetadata.symptoms.length > 0 && (
+              <div className="flex flex-col gap-3">
+                <BugReportSection symptoms={stressMetadata.symptoms} />
+              </div>
+            )}
 
             {/* Changed Files */}
             <div className="flex min-h-0 flex-1 flex-col gap-3">
