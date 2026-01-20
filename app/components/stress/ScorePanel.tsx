@@ -785,6 +785,25 @@ export function ScorePanel({
   
   // Whether we're still initializing (loading OR waiting for analysisResult to sync from existingResult)
   const isInitializing = isCheckingExisting || (existingResult && !analysisResult);
+  
+  // Whether we have task data to display (stressMetadata with symptoms/changes)
+  const hasTaskData = !!(stressMetadata?.symptoms?.length || stressMetadata?.changes?.length);
+
+  // Ensure activeView is valid and prioritize Analysis when available
+  useEffect(() => {
+    // When grade becomes available, switch to analysis (the preferred default)
+    if (hasGrade && activeView !== "analysis" && activeView !== "score") {
+      setActiveView("analysis");
+    }
+    // If on analysis view but no grade, switch to task (if available) or score
+    else if (activeView === "analysis" && !hasGrade) {
+      setActiveView(hasTaskData ? "task" : "score");
+    }
+    // If on task view but no task data, switch to analysis (if available) or score
+    else if (activeView === "task" && !hasTaskData) {
+      setActiveView(hasGrade ? "analysis" : "score");
+    }
+  }, [hasGrade, hasTaskData, activeView]);
 
   /**
    * Saves the stress test result to the database using the mutation hook.
@@ -956,12 +975,15 @@ export function ScorePanel({
     <div className={`flex flex-1 h-full min-h-0 flex-col overflow-hidden pt-10 transition-all duration-500 ease-out ${isVisible ? "opacity-100" : "opacity-0"}`}>
       {/* Fixed Header Section - Toggle + Score Card (always visible) */}
       <div className="shrink-0 space-y-4 pb-4">
-        {/* View Toggle - shown only when we have a grade (analysis complete) and not initializing */}
-        {hasGrade && !isInitializing && (
+        {/* View Toggle - shown when we have grade OR task data, and not initializing */}
+        {(hasGrade || hasTaskData) && !isInitializing && (
           <ToggleGroup
             options={[
-              { value: "analysis", label: "Analysis", icon: SparklesIcon },
-              { value: "task", label: "Task", icon: DocumentIcon },
+              // Analysis tab: only show if we have a grade (analysis complete)
+              ...(hasGrade ? [{ value: "analysis", label: "Analysis", icon: SparklesIcon }] : []),
+              // Task tab: show if we have task data (stressMetadata with symptoms/changes)
+              ...(hasTaskData ? [{ value: "task", label: "Task", icon: DocumentIcon }] : []),
+              // Score tab: always show when toggle is visible
               { value: "score", label: "Score", icon: TrophyIcon },
             ]}
             value={activeView}

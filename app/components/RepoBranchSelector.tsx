@@ -96,6 +96,8 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken, userName,
 
   // Track initialization to prevent duplicate restoration
   const hasInitialized = useRef(false);
+  // Track if we're currently restoring from URL to prevent sync loops
+  const isRestoringFromUrl = useRef(false);
 
   /**
    * Finds a commit with "start" in the message (case-insensitive).
@@ -128,22 +130,41 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken, userName,
   }, [canCheckScore]);
 
   /**
-   * Initialize state from URL parameters on mount.
-   * nuqs handles the URL sync, we just need to restore component state.
+   * Initialize state from URL parameters.
+   * Runs when URL repo changes (including initial hydration from nuqs).
+   */
+  useEffect(() => {
+    // Only restore if we have a URL repo and haven't selected one yet
+    if (!urlRepo || selectedRepo) return;
+    
+    // Set flag to prevent URL sync effects from overwriting URL params during restoration
+    if (urlBranch) {
+      isRestoringFromUrl.current = true;
+    }
+
+    // Find and select the repo from URL
+    const repo = repos.find((r) => r.full_name === urlRepo);
+    if (repo) {
+      handleRepoSelect(repo);
+    } else {
+      // Repo not found in list - clear the restoration flag
+      isRestoringFromUrl.current = false;
+    }
+
+    // If no branch to restore, clear flag immediately
+    if (!urlBranch) {
+      isRestoringFromUrl.current = false;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [urlRepo, repos]);
+
+  /**
+   * Show score panel from URL on initial load.
    */
   useEffect(() => {
     if (hasInitialized.current) return;
     hasInitialized.current = true;
 
-    // Restore repo from URL
-    if (urlRepo) {
-      const repo = initialRepos.find((r) => r.full_name === urlRepo);
-      if (repo) {
-        handleRepoSelect(repo);
-      }
-    }
-
-    // Show score panel if URL param is set
     if (urlShowScore) {
       setShowScorePanel(true);
     }
@@ -158,6 +179,11 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken, userName,
       const branchExists = branches.some((b) => b.name === urlBranch);
       if (branchExists) {
         handleBranchSelect(urlBranch);
+        // Clear restoration flag after branch is restored
+        // Use timeout to ensure state updates have propagated
+        setTimeout(() => {
+          isRestoringFromUrl.current = false;
+        }, 100);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -178,8 +204,12 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken, userName,
 
   /**
    * Sync component state to URL when selections change.
+   * Skip during URL restoration to prevent overwriting URL params.
    */
   useEffect(() => {
+    // Skip during URL restoration
+    if (isRestoringFromUrl.current) return;
+    
     // Update URL repo when selection changes
     const newRepo = selectedRepo?.full_name || null;
     if (newRepo !== urlRepo) {
@@ -188,6 +218,9 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken, userName,
   }, [selectedRepo, urlRepo, setUrlRepo]);
 
   useEffect(() => {
+    // Skip during URL restoration
+    if (isRestoringFromUrl.current) return;
+    
     // Update URL branch when selection changes
     if (selectedBranch !== urlBranch) {
       setUrlBranch(selectedBranch);
@@ -816,7 +849,14 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken, userName,
 
         {/* Score Panel View */}
         {showScorePanel && startCommit && completeCommit ? (
-          <ScorePanel startCommit={startCommit} completeCommit={completeCommit} branchName={selectedBranch || ""} onClose={() => setShowScorePanel(false)} stressMetadata={stressMetadata} />
+          <ScorePanel 
+            key={`${selectedBranch}-${stressMetadata?.buggerId || 'no-bugger'}`}
+            startCommit={startCommit} 
+            completeCommit={completeCommit} 
+            branchName={selectedBranch || ""} 
+            onClose={() => setShowScorePanel(false)} 
+            stressMetadata={stressMetadata} 
+          />
         ) : loadingDetails ? (
           <div className="flex flex-1 items-center justify-center">
             <div className="h-8 w-8 animate-spin rounded-full border-2 border-gh-border border-t-gh-success" />
