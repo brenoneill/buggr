@@ -98,6 +98,8 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken, userName,
   const hasInitialized = useRef(false);
   // Track if we're currently restoring from URL to prevent sync loops
   const isRestoringFromUrl = useRef(false);
+  // Track the last branch we auto-showed the score panel for
+  const lastAutoShowBranch = useRef<string | null>(null);
 
   /**
    * Finds a commit with "start" in the message (case-insensitive).
@@ -122,12 +124,20 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken, userName,
 
   /**
    * Automatically show score panel when both start and complete commits are detected.
+   * Uses a ref to track which branch we've auto-shown for, so switching between
+   * branches that both have scores will properly re-trigger the auto-show.
    */
   useEffect(() => {
-    if (canCheckScore) {
+    // Only auto-show if we can check score and haven't already auto-shown for this branch
+    if (canCheckScore && selectedBranch && lastAutoShowBranch.current !== selectedBranch) {
+      lastAutoShowBranch.current = selectedBranch;
       setShowScorePanel(true);
     }
-  }, [canCheckScore]);
+    // Reset the ref when canCheckScore becomes false (e.g., switching to non-scored branch)
+    if (!canCheckScore && selectedBranch) {
+      lastAutoShowBranch.current = null;
+    }
+  }, [canCheckScore, selectedBranch]);
 
   /**
    * Initialize state from URL parameters.
