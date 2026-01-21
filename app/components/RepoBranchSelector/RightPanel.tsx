@@ -141,7 +141,7 @@ export function RightPanel({
           stressMetadata={stressMetadata}
         />
       ) : selectedCommit ? (
-        <div className="relative flex h-full flex-1 flex-col">
+        <div className="relative flex min-h-0 flex-1 flex-col">
           {/* Check if commit details match the selected commit */}
           {(() => {
             const detailsMatchCommit = commitDetails && commitDetails.sha === selectedCommit.sha;
@@ -158,9 +158,11 @@ export function RightPanel({
 
                 {/* Commit content - only shows when details match selected commit */}
                 {detailsMatchCommit ? (
-                  <div className={`flex h-full flex-col gap-6 overflow-y-auto transition-opacity duration-200 ${showLoading ? "opacity-40" : "opacity-100"}`}>
+                  <div className={`flex min-h-0 flex-1 flex-col transition-opacity duration-200 ${showLoading ? "opacity-40" : "opacity-100"}`}>
+          {/* Scrollable content area - shrinks when form is shown */}
+          <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto">
           {/* Commit Header */}
-          <div className="flex items-start gap-4">
+          <div className="flex flex-shrink-0 items-start gap-4">
             {selectedCommit.author?.avatar_url ? (
               <img src={selectedCommit.author.avatar_url} alt={selectedCommit.author.login} className="h-12 w-12 rounded-full" />
             ) : (
@@ -177,7 +179,7 @@ export function RightPanel({
           </div>
 
           {/* Commit Message */}
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-shrink-0 flex-col gap-2">
             <div className="flex items-center gap-3">
               <code className="rounded-md bg-gh-canvas-subtle px-2 py-1 font-mono text-xs text-gh-accent">
                 {selectedCommit.sha.substring(0, 7)}
@@ -194,7 +196,7 @@ export function RightPanel({
 
           {/* Task Panel - shown on buggr branches above file changes */}
           {stressMetadata?.symptoms && stressMetadata.symptoms.length > 0 && (
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-shrink-0 flex-col gap-3">
               <BugReportSection symptoms={stressMetadata.symptoms} />
             </div>
           )}
@@ -210,7 +212,7 @@ export function RightPanel({
           </div>
 
           {/* Action Buttons */}
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-shrink-0 flex-wrap items-center gap-3">
             {selectedRepo && !showCreateBranch && (
               <a
                 href={`https://github.com/${selectedRepo.full_name}/commit/${selectedCommit.sha}`}
@@ -279,31 +281,6 @@ export function RightPanel({
             )}
           </div>
 
-          {/* Create Branch Form */}
-          {showCreateBranch && selectedBranch && (
-            <CreateBranchForm
-              baseBranch={selectedBranch}
-              timestamp={timestamp}
-              branchSuffix={branchSuffix}
-              onBranchSuffixChange={setBranchSuffix}
-              stressContext={stressContext}
-              onStressContextChange={setStressContext}
-              stressLevel={stressLevel}
-              onStressLevelChange={setStressLevel}
-              customFilesCount={customFilesCount}
-              onCustomFilesCountChange={setCustomFilesCount}
-              customBugCount={customBugCount}
-              onCustomBugCountChange={setCustomBugCount}
-              maxFilesAvailable={commitDetails?.files?.filter((f) => f.status !== "removed").length || 0}
-              userCoins={userCoins}
-              isLoading={creatingBranch}
-              loadingStep={loadingStep}
-              loadingSteps={LOADING_STEPS}
-              onSubmit={onCreateBranch}
-              onCancel={onCancelCreateBranch}
-            />
-          )}
-
           {/* Branch Success Message */}
           {branchSuccess && (
             <BranchSuccessCard
@@ -314,6 +291,34 @@ export function RightPanel({
                 setBranchSuccess(null);
               }}
             />
+          )}
+          </div>
+
+          {/* Create Branch Form - pinned outside scroll area */}
+          {showCreateBranch && selectedBranch && (
+            <div className="flex-shrink-0 pt-4">
+              <CreateBranchForm
+                baseBranch={selectedBranch}
+                timestamp={timestamp}
+                branchSuffix={branchSuffix}
+                onBranchSuffixChange={setBranchSuffix}
+                stressContext={stressContext}
+                onStressContextChange={setStressContext}
+                stressLevel={stressLevel}
+                onStressLevelChange={setStressLevel}
+                customFilesCount={customFilesCount}
+                onCustomFilesCountChange={setCustomFilesCount}
+                customBugCount={customBugCount}
+                onCustomBugCountChange={setCustomBugCount}
+                maxFilesAvailable={commitDetails?.files?.filter((f) => f.status !== "removed").length || 0}
+                userCoins={userCoins}
+                isLoading={creatingBranch}
+                loadingStep={loadingStep}
+                loadingSteps={LOADING_STEPS}
+                onSubmit={onCreateBranch}
+                onCancel={onCancelCreateBranch}
+              />
+            </div>
           )}
                   </div>
                 ) : (
