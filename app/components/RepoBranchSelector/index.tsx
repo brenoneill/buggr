@@ -17,29 +17,21 @@ interface RepoBranchSelectorProps {
 /**
  * Split-screen component for selecting a repository, branch, viewing commits,
  * and displaying details for selected commits including changed files.
- *
- * @param repos - List of user's GitHub repositories
- * @param accessToken - GitHub OAuth access token for fetching data
- * @param userName - Display name of the logged-in user
- * @param logoutForm - Optional logout form component
  */
 export function RepoBranchSelector({ repos: initialRepos, accessToken, userName, logoutForm }: RepoBranchSelectorProps) {
   const { invitations, isLoading: invitationsLoading } = useInvitations();
 
   const {
-    // Repos
     repos,
     selectedRepo,
     handleRepoSelect,
     handleForkSuccess,
 
-    // Branches
     branches,
     selectedBranch,
     loadingBranches,
     handleBranchSelect,
 
-    // Commits
     commits,
     selectedCommit,
     commitDetails,
@@ -47,12 +39,10 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken, userName,
     loadingDetails,
     handleCommitSelect,
 
-    // Computed commit helpers
     startCommit,
     completeCommit,
     canCheckScore,
 
-    // Branch creation
     showCreateBranch,
     setShowCreateBranch,
     branchSuffix,
@@ -70,11 +60,9 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken, userName,
     timestamp,
     handleCreateBranch,
 
-    // Branch success
     branchSuccess,
     setBranchSuccess,
 
-    // Branch deletion
     deletingBranch,
     showDeleteConfirm,
     setShowDeleteConfirm,
@@ -84,25 +72,19 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken, userName,
     setShowDeleteAllConfirm,
     handleDeleteAllBuggeredBranches,
 
-    // Branch link
     copiedBranchLink,
     handleCopyBranchLink,
 
-    // Score panel
     showScorePanel,
     setShowScorePanel,
     stressMetadata,
 
-    // Error
     error,
 
-    // Clear all
     handleClearSelection,
 
-    // User
     user,
 
-    // Buggers
     branchBuggerMap,
     loadingBuggers,
   } = useRepoBranchSelector({
@@ -110,10 +92,7 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken, userName,
     accessToken,
   });
 
-  /**
-   * Handles canceling the create branch form.
-   * Resets all form state to defaults.
-   */
+
   const handleCancelCreateBranch = () => {
     setShowCreateBranch(false);
     setBranchSuffix("");
@@ -194,7 +173,6 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken, userName,
         onCopyBranchLink={handleCopyBranchLink}
       />
 
-      {/* Invite Prompt Modal */}
       <InvitePromptModal hasInvites={invitations.length > 0} isLoading={invitationsLoading} />
     </div>
   );

@@ -23,22 +23,18 @@ import {
 import { LOADING_STEPS } from "@/app/components/stress/loading-steps";
 
 interface RightPanelProps {
-  // User
   userName?: string;
   userCoins?: number;
   logoutForm?: React.ReactNode;
 
-  // Repo & Branch
   selectedRepo: GitHubRepo | null;
   selectedBranch: string | null;
 
-  // Commit
   selectedCommit: GitHubCommit | null;
   commitDetails: GitHubCommitDetails | null;
   loadingDetails: boolean;
   loadingCommits: boolean;
 
-  // Score panel
   showScorePanel: boolean;
   setShowScorePanel: (show: boolean) => void;
   startCommit: GitHubCommit | undefined;
@@ -46,7 +42,6 @@ interface RightPanelProps {
   canCheckScore: boolean;
   stressMetadata: StressMetadata | null;
 
-  // Branch creation
   showCreateBranch: boolean;
   setShowCreateBranch: (show: boolean) => void;
   timestamp: string;
@@ -65,20 +60,14 @@ interface RightPanelProps {
   onCreateBranch: (e: React.FormEvent) => Promise<void>;
   onCancelCreateBranch: () => void;
 
-  // Branch success
   branchSuccess: string | null;
   setBranchSuccess: (name: string | null) => void;
   onShowBranch: (branchName: string) => void;
 
-  // Branch link
   copiedBranchLink: boolean;
   onCopyBranchLink: () => void;
 }
 
-/**
- * Right panel of the RepoBranchSelector.
- * Contains commit details, score panel, and branch creation form.
- */
 export function RightPanel({
   userName,
   userCoins,

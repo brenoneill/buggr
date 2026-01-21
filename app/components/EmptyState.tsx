@@ -5,33 +5,13 @@ import { DocumentIcon, CheckIcon, SearchIcon } from "@/app/components/icons";
 import { Container } from "@/app/components/Container";
 
 interface EmptyStateProps {
-  /**
-   * Icon to display (SVG element or component).
-   */
   icon: ReactNode;
-  /**
-   * Main title text.
-   */
   title: string;
-  /**
-   * Optional description text below the title.
-   */
   description?: string;
-  /**
-   * Size variant for the empty state.
-   * @default "default"
-   */
   size?: "sm" | "default";
 }
 
-/**
- * A reusable empty state component for displaying when no data is available.
- *
- * @param icon - Icon element to display
- * @param title - Main heading text
- * @param description - Optional subtext
- * @param size - Size variant (sm for inline, default for centered)
- */
+
 export function EmptyState({ icon, title, description, size = "default" }: EmptyStateProps) {
   if (size === "sm") {
     return (
@@ -54,10 +34,6 @@ export function EmptyState({ icon, title, description, size = "default" }: Empty
   );
 }
 
-/**
- * Common icons for empty states.
- * Uses the shared icon components with full sizing.
- */
 export const EmptyStateIcons = {
   commits: <DocumentIcon className="h-full w-full" />,
   bugReports: <CheckIcon className="h-full w-full" />,

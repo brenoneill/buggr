@@ -3,17 +3,9 @@
 import { CoinIcon } from "@/app/components/icons";
 
 interface CoinsUpsellProps {
-  /**
-   * Email address used for the mailto link. Falls back to contact@buggr.dev.
-   */
   contactEmail?: string;
 }
 
-/**
- * CTA encouraging users to get more coins by self-hosting or contacting support.
- *
- * @param contactEmail - Email address to use in the mailto link.
- */
 export function CoinsUpsell({ contactEmail }: CoinsUpsellProps) {
   const email = contactEmail || "hello@buggr.dev";
 

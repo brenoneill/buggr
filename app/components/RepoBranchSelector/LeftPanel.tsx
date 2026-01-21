@@ -14,24 +14,20 @@ import { PublicReposList } from "@/app/components/PublicReposList";
 import { BuggrIcon, CloseIcon, TrashIcon, CheckIcon, CopyIcon } from "@/app/components/icons";
 
 interface LeftPanelProps {
-  // Repos
   repos: GitHubRepo[];
   selectedRepo: GitHubRepo | null;
   onRepoSelect: (repo: GitHubRepo) => void;
 
-  // Branches
   branches: GitHubBranch[];
   selectedBranch: string | null;
   loadingBranches: boolean;
   onBranchSelect: (branchName: string) => void;
 
-  // Commits
   commits: GitHubCommit[];
   selectedCommit: GitHubCommit | null;
   loadingCommits: boolean;
   onCommitSelect: (commit: GitHubCommit) => void;
 
-  // Branch actions
   showDeleteConfirm: boolean;
   setShowDeleteConfirm: (show: boolean) => void;
   deletingBranch: boolean;
@@ -43,52 +39,27 @@ interface LeftPanelProps {
   copiedBranchLink: boolean;
   onCopyBranchLink: () => void;
 
-  // Error
   error: string | null;
 
-  // Actions
   onClearSelection: () => void;
   onForkSuccess: (forkedRepo: GitHubRepo) => void;
 
-  // Bugger data for branches
   branchBuggerMap: Map<string, BranchBuggerInfo>;
   loadingBuggers: boolean;
 }
 
-/**
- * Checks if any branches are buggr-created branches.
- *
- * @param branches - Array of branches to check
- * @returns Whether any buggr branches exist
- */
 function hasBuggrBranches(branches: GitHubBranch[]): boolean {
   return branches.some((b) => b.name.includes("buggr-"));
 }
 
-/**
- * Counts the number of buggr branches.
- *
- * @param branches - Array of branches to count
- * @returns Number of buggr branches
- */
 function countBuggrBranches(branches: GitHubBranch[]): number {
   return branches.filter((b) => b.name.includes("buggr-")).length;
 }
 
-/**
- * Checks if the selected branch is a buggr branch.
- *
- * @param branchName - Branch name to check
- * @returns Whether the branch is a buggr branch
- */
 function isSelectedBuggrBranch(branchName: string | null): boolean {
   return branchName?.includes("buggr-") ?? false;
 }
 
-/**
- * Left panel of the RepoBranchSelector.
- * Contains repository/branch selection and commits list.
- */
 export function LeftPanel({
   repos,
   selectedRepo,
@@ -117,9 +88,7 @@ export function LeftPanel({
   branchBuggerMap,
   loadingBuggers,
 }: LeftPanelProps) {
-  /**
-   * Renders the header section with logo and notes panel.
-   */
+
   const renderHeader = () => (
     <div className="mb-6 flex items-center justify-between">
       <div className="flex items-center gap-3">
@@ -132,9 +101,6 @@ export function LeftPanel({
     </div>
   );
 
-  /**
-   * Renders the repository selector dropdown.
-   */
   const renderRepoSelector = () => (
     <Select
       label="Repository"
@@ -151,9 +117,6 @@ export function LeftPanel({
     />
   );
 
-  /**
-   * Renders the action buttons row (clear selection, delete all branches).
-   */
   const renderActionButtons = () => {
     if (!selectedRepo) return null;
 
@@ -190,9 +153,6 @@ export function LeftPanel({
     );
   };
 
-  /**
-   * Renders the branches list section.
-   */
   const renderBranchesList = () => {
     if (!selectedRepo) return null;
 
@@ -227,9 +187,6 @@ export function LeftPanel({
     );
   };
 
-  /**
-   * Renders the selected branch actions (copy link, delete).
-   */
   const renderSelectedBranchActions = () => {
     if (!selectedBranch || !isSelectedBuggrBranch(selectedBranch)) return null;
 
@@ -274,9 +231,6 @@ export function LeftPanel({
     );
   };
 
-  /**
-   * Renders the commits list section.
-   */
   const renderCommitsList = () => {
     if (!selectedBranch) return null;
 
@@ -315,27 +269,22 @@ export function LeftPanel({
     <div className="flex h-full w-[40%] flex-col border-r border-gh-border p-6">
       {renderHeader()}
 
-      {/* Repository Selector */}
       <div className="flex flex-col gap-4">
         {renderRepoSelector()}
       </div>
 
       {renderActionButtons()}
 
-      {/* Public Repos Section - only show when no repo selected */}
       {!selectedRepo && <PublicReposList onForkSuccess={onForkSuccess} userRepos={repos} />}
 
-      {/* Error Display */}
       {error && (
         <div className="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
           {error}
         </div>
       )}
 
-      {/* Branches List - show when repo is selected */}
       {renderBranchesList()}
 
-      {/* Commits List - show when branch is selected */}
       {renderCommitsList()}
     </div>
   );

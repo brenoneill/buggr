@@ -37,17 +37,6 @@ const variantStyles: Record<CardVariant, string> = {
   inset: "border-gh-border bg-gh-canvas",
 };
 
-/**
- * A styled card container component with multiple variants.
- * Uses the GitHub-inspired theme colors for consistent styling.
- *
- * @param as - Element type to render (div, form, section, etc.)
- * @param children - Content to render inside the card
- * @param variant - Visual style variant (default, success, danger, inset)
- * @param padded - Whether to apply default padding
- * @param className - Additional CSS classes
- * @param props - Additional props passed to the underlying element
- */
 export function Card<T extends ElementType = "div">({
   as,
   children,

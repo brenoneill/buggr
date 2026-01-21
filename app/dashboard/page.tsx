@@ -4,17 +4,11 @@ import { RepoBranchSelector } from "../components/RepoBranchSelector";
 import { Button } from "../components/inputs/Button";
 import { LogoutIcon } from "../components/icons";
 
-/**
- * Dashboard page - main application interface for authenticated users.
- * Route is protected by middleware - only authenticated users can access.
- */
 export default async function Dashboard() {
   const session = await auth();
   
-  // Get access token with fallback for type safety
   const accessToken = session?.accessToken ?? "";
 
-  // Fetch repos for authenticated user
   const repos = accessToken 
     ? await fetchUserRepos(accessToken).catch(() => [])
     : [];

@@ -16,7 +16,6 @@ import {
 } from "@/lib/score-config";
 import { useResultByBugger, useSaveResult } from "@/app/hooks/useBuggers";
 
-/** Steps shown during code analysis */
 const ANALYSIS_STEPS: LoadingStep[] = [
   { label: "Fetching commit changes", timeEstimate: "5-30s" },
   { label: "Reading your code diff", timeEstimate: "5-30s" },
@@ -26,15 +25,10 @@ const ANALYSIS_STEPS: LoadingStep[] = [
 ];
 
 interface ScorePanelProps {
-  /** The commit where debugging started (contains "start" in message) */
   startCommit: GitHubCommit;
-  /** The commit where debugging completed (contains "complete" in message) */
   completeCommit: GitHubCommit;
-  /** The branch name being viewed */
   branchName: string;
-  /** Callback to close the score panel */
   onClose: () => void;
-  /** Optional buggr metadata from .buggr.json */
   stressMetadata?: StressMetadata | null;
 }
 
@@ -69,7 +63,6 @@ function calculateTimeDifference(
   return { formatted, ms: diffMs };
 }
 
-/** Props for the score card helper components */
 interface ScoreCardProps {
   scoreRating: ScoreRating;
   timeDifference: string;
@@ -79,7 +72,6 @@ interface ScoreCardProps {
   isVisible: boolean;
 }
 
-/** Props for time-only card shown before analysis */
 interface TimeOnlyCardProps {
   timeDifference: string;
   bugCount: number;
@@ -176,13 +168,7 @@ function TimeOnlyCard({
   );
 }
 
-/**
- * Renders a compact/slim version of the score card.
- * Used when analysis results are displayed to save vertical space.
- * 
- * @param props - Score card display properties
- * @returns JSX element for the slim score card
- */
+
 function SlimScoreCard({
   scoreRating,
   timeDifference,
@@ -236,13 +222,6 @@ function SlimScoreCard({
   );
 }
 
-/**
- * Renders the full score card with all details and animations.
- * Used before analysis is triggered to show the complete score breakdown.
- * 
- * @param props - Score card display properties
- * @returns JSX element for the full score card
- */
 function FullScoreCard({
   scoreRating,
   timeDifference,
@@ -328,22 +307,12 @@ function FullScoreCard({
   );
 }
 
-// =============================================================================
-// Task Panel Helper Components
-// =============================================================================
 
-/** Props for section header component */
 interface SectionHeaderProps {
   icon: React.ReactNode;
   title: string;
 }
 
-/**
- * Renders a consistent section header with icon and title.
- * 
- * @param props - Section header properties
- * @returns JSX element for the section header
- */
 function SectionHeader({ icon, title }: SectionHeaderProps) {
   return (
     <h3 className="flex items-center gap-2 text-xs font-semibold tracking-wide text-gh-text-muted uppercase">
@@ -353,18 +322,10 @@ function SectionHeader({ icon, title }: SectionHeaderProps) {
   );
 }
 
-/** Props for Bug Report section */
 interface BugReportSectionProps {
   symptoms: string[];
 }
 
-/**
- * Renders the Bug Report section showing user-facing symptom descriptions.
- * Exported for reuse in commit view when viewing a buggr branch.
- * 
- * @param props - Bug report properties containing symptoms array
- * @returns JSX element for the bug report section
- */
 export function BugReportSection({ symptoms }: BugReportSectionProps) {
   return (
     <div className="space-y-2">
@@ -386,17 +347,10 @@ export function BugReportSection({ symptoms }: BugReportSectionProps) {
   );
 }
 
-/** Props for Files Modified section */
 interface FilesModifiedSectionProps {
   files: string[];
 }
 
-/**
- * Renders the Files Modified section showing which files were buggered.
- * 
- * @param props - Files modified properties containing files array
- * @returns JSX element for the files modified section
- */
 function FilesModifiedSection({ files }: FilesModifiedSectionProps) {
   return (
     <div className="space-y-2">
@@ -412,18 +366,10 @@ function FilesModifiedSection({ files }: FilesModifiedSectionProps) {
   );
 }
 
-/** Props for Changes Made (Spoiler) section */
 interface ChangesMadeSectionProps {
   changes: string[];
 }
 
-/**
- * Renders the Changes Made section showing technical descriptions of bugs.
- * Styled as a spoiler with warning colors.
- * 
- * @param props - Changes made properties containing changes array
- * @returns JSX element for the changes made section
- */
 function ChangesMadeSection({ changes }: ChangesMadeSectionProps) {
   return (
     <div className="space-y-2">
@@ -446,18 +392,11 @@ function ChangesMadeSection({ changes }: ChangesMadeSectionProps) {
   );
 }
 
-/** Props for the Task Details panel */
 interface TaskDetailsPanelProps {
   stressMetadata: StressMetadata;
   isVisible: boolean;
 }
 
-/**
- * Renders the complete Task Details panel with Bug Report, Files Modified, and Changes Made sections.
- * 
- * @param props - Task details panel properties
- * @returns JSX element for the task details panel
- */
 function TaskDetailsPanel({ stressMetadata, isVisible }: TaskDetailsPanelProps) {
   return (
     <div 
@@ -471,24 +410,12 @@ function TaskDetailsPanel({ stressMetadata, isVisible }: TaskDetailsPanelProps) 
   );
 }
 
-// =============================================================================
-// Analysis Panel Helper Components
-// =============================================================================
-
-/** Props for Analysis Summary section */
 interface AnalysisSummarySectionProps {
   summary: string;
   isPerfect: boolean;
   isRevealed: boolean;
 }
 
-/**
- * Renders the Analysis Summary card.
- * Uses success styling when the fix is perfect.
- * 
- * @param props - Analysis summary properties
- * @returns JSX element for the analysis summary
- */
 function AnalysisSummarySection({ summary, isPerfect, isRevealed }: AnalysisSummarySectionProps) {
   return (
     <Card 
@@ -504,7 +431,6 @@ function AnalysisSummarySection({ summary, isPerfect, isRevealed }: AnalysisSumm
   );
 }
 
-/** Props for a single feedback item */
 interface FeedbackItemProps {
   item: AnalysisFeedback;
   index: number;
@@ -513,12 +439,6 @@ interface FeedbackItemProps {
   getFeedbackBgColor: (type: AnalysisFeedback["type"]) => string;
 }
 
-/**
- * Renders a single feedback item card with icon, title, message, and optional improvement suggestion.
- * 
- * @param props - Feedback item properties
- * @returns JSX element for the feedback item
- */
 function FeedbackItem({ item, index, isRevealed, getFeedbackIcon, getFeedbackBgColor }: FeedbackItemProps) {
   return (
     <div 
@@ -549,7 +469,6 @@ function FeedbackItem({ item, index, isRevealed, getFeedbackIcon, getFeedbackBgC
   );
 }
 
-/** Props for the Analysis Results panel */
 interface AnalysisResultsPanelProps {
   analysisResult: AnalyzeResponse;
   isRevealed: boolean;
@@ -557,12 +476,6 @@ interface AnalysisResultsPanelProps {
   getFeedbackBgColor: (type: AnalysisFeedback["type"]) => string;
 }
 
-/**
- * Renders the complete Analysis Results panel with summary and feedback items.
- * 
- * @param props - Analysis results panel properties
- * @returns JSX element for the analysis results panel
- */
 function AnalysisResultsPanel({ 
   analysisResult, 
   isRevealed,
@@ -601,11 +514,6 @@ function AnalysisResultsPanel({
   );
 }
 
-// =============================================================================
-// Timeline Panel Helper Components
-// =============================================================================
-
-/** Props for a timeline commit item */
 interface TimelineCommitItemProps {
   commit: GitHubCommit;
   icon: string;
@@ -614,12 +522,7 @@ interface TimelineCommitItemProps {
   transitionDelay: string;
 }
 
-/**
- * Renders a single commit item in the timeline.
- * 
- * @param props - Timeline commit item properties
- * @returns JSX element for the timeline commit item
- */
+
 function TimelineCommitItem({ commit, icon, iconBgColor, isVisible, transitionDelay }: TimelineCommitItemProps) {
   return (
     <Card 
@@ -646,19 +549,12 @@ function TimelineCommitItem({ commit, icon, iconBgColor, isVisible, transitionDe
   );
 }
 
-/** Props for the Timeline panel */
 interface TimelinePanelProps {
   startCommit: GitHubCommit;
   completeCommit: GitHubCommit;
   isVisible: boolean;
 }
 
-/**
- * Renders the Timeline panel showing start and complete commits.
- * 
- * @param props - Timeline panel properties
- * @returns JSX element for the timeline panel
- */
 function TimelinePanel({ startCommit, completeCommit, isVisible }: TimelinePanelProps) {
   return (
     <div 
@@ -802,13 +698,7 @@ export function ScorePanel({
     }
   }, [hasGrade, hasTaskData, activeView]);
 
-  /**
-   * Saves the stress test result to the database using the mutation hook.
-   * Called after analysis completes successfully.
-   * Uses the AI-determined grade from the analysis result.
-   * 
-   * @param analysis - The AI analysis result including the grade
-   */
+
   const handleSaveResult = async (analysis: AnalyzeResponse) => {
     if (!stressMetadata?.buggerId) {
       console.warn("No buggerId found in stressMetadata, skipping result save");
@@ -832,11 +722,6 @@ export function ScorePanel({
     }
   };
 
-  /**
-   * Handles the analyze code action.
-   * Fetches the complete commit's diff and analyzes it for common issues.
-   * Shows step-by-step progress during the analysis.
-   */
   const handleAnalyzeCode = async () => {
     if (!stressMetadata) {
       setAnalysisError("No stress metadata available for analysis");
@@ -902,12 +787,6 @@ export function ScorePanel({
     }
   };
 
-  /**
-   * Returns the appropriate icon for a feedback type.
-   * 
-   * @param type - The feedback type
-   * @returns JSX element for the icon
-   */
   const getFeedbackIcon = (type: AnalysisFeedback["type"]) => {
     switch (type) {
       case "success":
@@ -924,12 +803,7 @@ export function ScorePanel({
     }
   };
 
-  /**
-   * Returns the appropriate background color for a feedback type.
-   * 
-   * @param type - The feedback type
-   * @returns Tailwind CSS class for background color
-   */
+
   const getFeedbackBgColor = (type: AnalysisFeedback["type"]) => {
     switch (type) {
       case "success":
@@ -946,7 +820,6 @@ export function ScorePanel({
     }
   };
 
-  // Props for time-only card (before analysis)
   const timeOnlyCardProps: TimeOnlyCardProps = {
     timeDifference,
     bugCount,
@@ -955,7 +828,6 @@ export function ScorePanel({
     isVisible,
   };
 
-  // Props for score card components (after analysis)
   const scoreCardProps: ScoreCardProps = {
     scoreRating,
     timeDifference,
