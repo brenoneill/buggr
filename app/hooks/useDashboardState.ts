@@ -34,10 +34,10 @@ export function useDashboardState() {
     parseAsString.withOptions({ history: "push", shallow: false })
   );
 
-  // Commit SHA (short)
+  // Commit SHA (short) - uses replace and shallow to avoid re-renders when switching commits
   const [commit, setCommit] = useQueryState(
     "commit",
-    parseAsString.withOptions({ history: "push", shallow: false })
+    parseAsString.withOptions({ history: "replace", shallow: true })
   );
 
   // Whether to show the score panel

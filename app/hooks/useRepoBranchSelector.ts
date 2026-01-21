@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import type { GitHubRepo, GitHubBranch, GitHubCommit, GitHubCommitDetails, StressMetadata } from "@/lib/github";
 import { fetchStressMetadata } from "@/lib/github";
@@ -45,7 +46,7 @@ export interface UseRepoBranchSelectorReturn {
   branches: GitHubBranch[];
   selectedBranch: string | null;
   loadingBranches: boolean;
-  handleBranchSelect: (branchName: string) => Promise<void>;
+  handleBranchSelect: (branchName: string) => void;
 
   // Commits
   commits: GitHubCommit[];
@@ -53,7 +54,7 @@ export interface UseRepoBranchSelectorReturn {
   commitDetails: GitHubCommitDetails | null;
   loadingCommits: boolean;
   loadingDetails: boolean;
-  handleCommitSelect: (commit: GitHubCommit) => Promise<void>;
+  handleCommitSelect: (commit: GitHubCommit) => void;
 
   // Computed commit helpers
   startCommit: GitHubCommit | undefined;
@@ -115,6 +116,7 @@ export interface UseRepoBranchSelectorReturn {
 
   // Buggers
   branchBuggerMap: Map<string, BranchBuggerInfo>;
+  loadingBuggers: boolean;
 }
 
 /**
@@ -129,10 +131,11 @@ export function useRepoBranchSelector({
   initialRepos,
   accessToken,
 }: UseRepoBranchSelectorProps): UseRepoBranchSelectorReturn {
+  const router = useRouter();
   const { openPanel } = useNotes();
   const queryClient = useQueryClient();
   const { user } = useUser();
-  const { buggers } = useBuggers({ limit: 100 });
+  const { buggers, isLoading: loadingBuggers } = useBuggers({ limit: 100 });
 
   // URL state via nuqs
   const {
@@ -147,11 +150,9 @@ export function useRepoBranchSelector({
     clearAll: clearUrlParams,
   } = useDashboardState();
 
-  // Core state
+  // Core state - branch and commit selection derived from URL
   const [repos, setRepos] = useState<GitHubRepo[]>(initialRepos);
   const [selectedRepo, setSelectedRepo] = useState<GitHubRepo | null>(null);
-  const [selectedBranch, setSelectedBranch] = useState<string | null>(null);
-  const [selectedCommit, setSelectedCommit] = useState<GitHubCommit | null>(null);
   const [commitDetails, setCommitDetails] = useState<GitHubCommitDetails | null>(null);
   const [branches, setBranches] = useState<GitHubBranch[]>([]);
   const [commits, setCommits] = useState<GitHubCommit[]>([]);
@@ -159,6 +160,15 @@ export function useRepoBranchSelector({
   const [loadingCommits, setLoadingCommits] = useState(false);
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Derive selectedBranch from URL
+  const selectedBranch = urlBranch;
+  
+  // Derive selectedCommit from URL and commits list
+  const selectedCommit = useMemo(() => {
+    if (!urlCommit || commits.length === 0) return null;
+    return commits.find((c) => c.sha === urlCommit || c.sha.startsWith(urlCommit)) ?? null;
+  }, [urlCommit, commits]);
 
   // Create branch state
   const [showCreateBranch, setShowCreateBranch] = useState(false);
@@ -186,6 +196,8 @@ export function useRepoBranchSelector({
   const hasInitialized = useRef(false);
   const isRestoringFromUrl = useRef(false);
   const lastAutoShowBranch = useRef<string | null>(null);
+  const lastFetchedBranch = useRef<string | null>(null);
+  const lastFetchedCommit = useRef<string | null>(null);
 
   // Computed values
   const startCommit = commits.find(
@@ -239,13 +251,17 @@ export function useRepoBranchSelector({
    */
   const handleRepoSelect = useCallback(async (repo: GitHubRepo) => {
     setSelectedRepo(repo);
-    setSelectedBranch(null);
-    setSelectedCommit(null);
     setCommitDetails(null);
     setCommits([]);
     setLoadingBranches(true);
     setError(null);
     setShowScorePanel(false);
+    lastFetchedBranch.current = null; // Reset so branch effect can run
+    lastFetchedCommit.current = null; // Reset so commit effect can run
+
+    // Clear branch and commit from URL when selecting new repo
+    setUrlBranch(null);
+    setUrlCommit(null);
 
     try {
       const response = await fetch(`/api/github/branches?owner=${repo.owner.login}&repo=${repo.name}`);
@@ -262,102 +278,31 @@ export function useRepoBranchSelector({
     } finally {
       setLoadingBranches(false);
     }
-  }, []);
+  }, [setUrlBranch, setUrlCommit]);
 
   /**
-   * Fetches details for the selected commit including changed files.
+   * Navigates to a commit by updating the URL.
+   * The URL change triggers effects that restore the state.
    */
-  const handleCommitSelect = useCallback(async (commit: GitHubCommit) => {
-    if (!selectedRepo) return;
+  const handleCommitSelect = useCallback((commit: GitHubCommit) => {
+    if (!selectedRepo || !selectedBranch) return;
 
-    setSelectedCommit(commit);
-    setLoadingDetails(true);
-    setError(null);
-
-    try {
-      const response = await fetch(
-        `/api/github/commit?owner=${selectedRepo.owner.login}&repo=${selectedRepo.name}&sha=${commit.sha}`
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch commit details");
-      }
-
-      const data = await response.json();
-      setCommitDetails(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
-      setCommitDetails(null);
-    } finally {
-      setLoadingDetails(false);
-    }
-  }, [selectedRepo]);
+    // Navigate via URL - same pattern as NotesPanel
+    const url = `/dashboard?repo=${selectedRepo.full_name}&branch=${encodeURIComponent(selectedBranch)}&commit=${commit.sha.substring(0, 7)}`;
+    router.push(url);
+  }, [selectedRepo, selectedBranch, router]);
 
   /**
-   * Fetches commits for the selected branch.
+   * Navigates to a branch by updating the URL.
+   * The URL change triggers effects that fetch commits and restore state.
    */
-  const handleBranchSelect = useCallback(async (branchName: string) => {
+  const handleBranchSelect = useCallback((branchName: string) => {
     if (!selectedRepo) return;
 
-    setSelectedBranch(branchName);
-    setSelectedCommit(null);
-    setCommitDetails(null);
-    setLoadingCommits(true);
-    setError(null);
-    setShowScorePanel(false);
-    setStressMetadata(null);
-
-    try {
-      const response = await fetch(
-        `/api/github/commits?owner=${selectedRepo.owner.login}&repo=${selectedRepo.name}&branch=${encodeURIComponent(branchName)}`
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch commits");
-      }
-
-      const data = await response.json();
-      setCommits(data);
-
-      // Auto-select the first commit if available
-      if (data.length > 0) {
-        // Inline commit selection to avoid dependency issues
-        setSelectedCommit(data[0]);
-        setLoadingDetails(true);
-        try {
-          const detailsResponse = await fetch(
-            `/api/github/commit?owner=${selectedRepo.owner.login}&repo=${selectedRepo.name}&sha=${data[0].sha}`
-          );
-          if (detailsResponse.ok) {
-            const detailsData = await detailsResponse.json();
-            setCommitDetails(detailsData);
-          }
-        } catch {
-          // Silently fail for details
-        } finally {
-          setLoadingDetails(false);
-        }
-      }
-
-      // Fetch stress metadata for buggr branches
-      if (branchName.includes("buggr-")) {
-        setLoadingMetadata(true);
-        try {
-          const metadata = await fetchStressMetadata(accessToken, selectedRepo.owner.login, selectedRepo.name, branchName);
-          setStressMetadata(metadata);
-        } catch {
-          setStressMetadata(null);
-        } finally {
-          setLoadingMetadata(false);
-        }
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
-      setCommits([]);
-    } finally {
-      setLoadingCommits(false);
-    }
-  }, [selectedRepo, accessToken]);
+    // Navigate via URL - same pattern as NotesPanel
+    const url = `/dashboard?repo=${selectedRepo.full_name}&branch=${encodeURIComponent(branchName)}`;
+    router.push(url);
+  }, [selectedRepo, router]);
 
   /**
    * Creates a new branch from the selected commit and automatically buggers it up.
@@ -558,8 +503,11 @@ export function useRepoBranchSelector({
         setBranches(branchesData);
       }
 
-      setSelectedBranch(null);
-      setSelectedCommit(null);
+      // Clear branch from URL (commit will clear automatically since it's derived)
+      setUrlBranch(null);
+      setUrlCommit(null);
+      lastFetchedBranch.current = null;
+      lastFetchedCommit.current = null;
       setCommitDetails(null);
       setCommits([]);
       setShowDeleteConfirm(false);
@@ -568,7 +516,7 @@ export function useRepoBranchSelector({
     } finally {
       setDeletingBranch(false);
     }
-  }, [selectedRepo, selectedBranch]);
+  }, [selectedRepo, selectedBranch, setUrlBranch, setUrlCommit]);
 
   /**
    * Copies the branch link to clipboard.
@@ -626,8 +574,10 @@ export function useRepoBranchSelector({
 
       // Clear selection if the current branch was deleted
       if (selectedBranch && data.deleted.includes(selectedBranch)) {
-        setSelectedBranch(null);
-        setSelectedCommit(null);
+        setUrlBranch(null);
+        setUrlCommit(null);
+        lastFetchedBranch.current = null;
+        lastFetchedCommit.current = null;
         setCommitDetails(null);
         setCommits([]);
       }
@@ -640,7 +590,7 @@ export function useRepoBranchSelector({
     } finally {
       setDeletingAllBranches(false);
     }
-  }, [selectedRepo, selectedBranch]);
+  }, [selectedRepo, selectedBranch, setUrlBranch, setUrlCommit]);
 
   /**
    * Handles successful fork by adding the forked repo to the list and selecting it.
@@ -658,14 +608,14 @@ export function useRepoBranchSelector({
    */
   const handleClearSelection = useCallback(() => {
     setSelectedRepo(null);
-    setSelectedBranch(null);
-    setSelectedCommit(null);
     setCommitDetails(null);
     setBranches([]);
     setCommits([]);
     setBranchSuccess(null);
     setShowCreateBranch(false);
     setShowScorePanel(false);
+    lastFetchedBranch.current = null;
+    lastFetchedCommit.current = null;
     clearUrlParams();
   }, [clearUrlParams]);
 
@@ -722,59 +672,110 @@ export function useRepoBranchSelector({
   }, [urlShowScore]);
 
   /**
-   * Restore branch selection when URL branch changes or branches load.
+   * Fetch commits when URL branch changes.
+   * This effect handles all branch-related data fetching.
    */
   useEffect(() => {
-    if (urlBranch && branches.length > 0 && selectedBranch !== urlBranch) {
-      const branchExists = branches.some((b) => b.name === urlBranch);
-      if (branchExists) {
-        isRestoringFromUrl.current = true;
-        handleBranchSelect(urlBranch);
-        setTimeout(() => {
-          isRestoringFromUrl.current = false;
-        }, 100);
-      }
+    if (!urlBranch || !selectedRepo) return;
+    
+    // Check if branch exists
+    if (branches.length > 0 && !branches.some((b) => b.name === urlBranch)) return;
+    
+    // Skip if we already fetched for this branch
+    if (lastFetchedBranch.current === urlBranch) return;
+    lastFetchedBranch.current = urlBranch;
+
+    // Clear previous state
+    setCommitDetails(null);
+    setCommits([]);
+    setLoadingCommits(true);
+    setError(null);
+    setShowScorePanel(false);
+    setStressMetadata(null);
+
+    // Fetch commits for this branch
+    fetch(`/api/github/commits?owner=${selectedRepo.owner.login}&repo=${selectedRepo.name}&branch=${encodeURIComponent(urlBranch)}`)
+      .then((response) => {
+        if (!response.ok) throw new Error("Failed to fetch commits");
+        return response.json();
+      })
+      .then((data) => {
+        setCommits(data);
+        
+        // Auto-select first commit if no commit in URL - update URL to trigger details fetch
+        if (data.length > 0 && !urlCommit) {
+          setUrlCommit(data[0].sha.substring(0, 7));
+        }
+      })
+      .catch((err) => {
+        setError(err instanceof Error ? err.message : "Something went wrong");
+        setCommits([]);
+      })
+      .finally(() => {
+        setLoadingCommits(false);
+      });
+
+    // Fetch stress metadata for buggr branches
+    if (urlBranch.includes("buggr-")) {
+      setLoadingMetadata(true);
+      fetchStressMetadata(accessToken, selectedRepo.owner.login, selectedRepo.name, urlBranch)
+        .then((metadata) => setStressMetadata(metadata))
+        .catch(() => setStressMetadata(null))
+        .finally(() => setLoadingMetadata(false));
     }
-  }, [urlBranch, branches, selectedBranch, handleBranchSelect]);
+  }, [urlBranch, urlCommit, selectedRepo, branches, accessToken, setUrlCommit]);
 
   /**
-   * Restore commit selection when URL commit changes or commits load.
+   * Fetch commit details when URL commit changes.
+   * selectedCommit is derived from URL, so we just need to fetch details.
    */
   useEffect(() => {
-    if (urlCommit && commits.length > 0 && !selectedCommit) {
-      const commit = commits.find((c) => c.sha === urlCommit || c.sha.startsWith(urlCommit));
-      if (commit) {
-        handleCommitSelect(commit);
-      }
-    }
-  }, [urlCommit, commits, selectedCommit, handleCommitSelect]);
+    if (!selectedCommit || !selectedRepo) return;
+    
+    // Skip if we already fetched details for this commit
+    if (lastFetchedCommit.current === selectedCommit.sha) return;
+    if (commitDetails?.sha === selectedCommit.sha) return;
+    
+    lastFetchedCommit.current = selectedCommit.sha;
+    setLoadingDetails(true);
+    setError(null);
+    
+    fetch(`/api/github/commit?owner=${selectedRepo.owner.login}&repo=${selectedRepo.name}&sha=${selectedCommit.sha}`)
+      .then((response) => {
+        if (!response.ok) throw new Error("Failed to fetch commit details");
+        return response.json();
+      })
+      .then((data) => {
+        setCommitDetails(data);
+      })
+      .catch((err) => {
+        setError(err instanceof Error ? err.message : "Something went wrong");
+        setCommitDetails(null);
+      })
+      .finally(() => {
+        setLoadingDetails(false);
+      });
+  }, [selectedCommit, selectedRepo, commitDetails?.sha]);
 
   /**
    * Sync component state to URL when selections change.
+   * Only syncs when values actually change to prevent loops.
    */
   useEffect(() => {
     if (isRestoringFromUrl.current) return;
     const newRepo = selectedRepo?.full_name || null;
+    // Only update if actually different from current URL
     if (newRepo !== urlRepo) {
       setUrlRepo(newRepo);
     }
-  }, [selectedRepo, urlRepo, setUrlRepo]);
+  }, [selectedRepo?.full_name, urlRepo, setUrlRepo]);
+
+  // NOTE: Branch selection is derived from URL (urlBranch) - no sync effect needed.
+  // NOTE: Commit URL sync is handled directly in handleCommitSelect.
+  // to avoid timing issues with effects. No automatic sync effect needed here.
 
   useEffect(() => {
-    if (isRestoringFromUrl.current) return;
-    if (selectedBranch !== urlBranch) {
-      setUrlBranch(selectedBranch);
-    }
-  }, [selectedBranch, urlBranch, setUrlBranch]);
-
-  useEffect(() => {
-    const newCommit = selectedCommit?.sha.substring(0, 7) || null;
-    if (newCommit !== urlCommit) {
-      setUrlCommit(newCommit);
-    }
-  }, [selectedCommit, urlCommit, setUrlCommit]);
-
-  useEffect(() => {
+    // Only update if actually different from current URL
     if (showScorePanel !== urlShowScore) {
       setUrlShowScore(showScorePanel);
     }
@@ -869,5 +870,6 @@ export function useRepoBranchSelector({
 
     // Buggers
     branchBuggerMap,
+    loadingBuggers,
   };
 }

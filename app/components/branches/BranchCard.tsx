@@ -21,6 +21,10 @@ interface BranchCardProps {
    * Optional bugger information for this branch.
    */
   buggerInfo?: BranchBuggerInfo;
+  /**
+   * Whether bugger info is still loading.
+   */
+  loadingBuggerInfo?: boolean;
 }
 
 /**
@@ -88,10 +92,13 @@ function getGradeBgColor(grade: string): string {
  * @param isSelected - Whether this branch is selected
  * @param onClick - Click handler for selection
  * @param buggerInfo - Optional bugger/analysis info for this branch
+ * @param loadingBuggerInfo - Whether bugger info is still loading
  */
-export function BranchCard({ branch, isSelected, onClick, buggerInfo }: BranchCardProps) {
+export function BranchCard({ branch, isSelected, onClick, buggerInfo, loadingBuggerInfo }: BranchCardProps) {
   const isBuggr = isBuggrBranch(branch.name);
   const hasGrade = buggerInfo?.hasAnalysis && buggerInfo?.grade;
+  // Show loading placeholder for buggr branches while data is loading
+  const showGradeLoader = isBuggr && loadingBuggerInfo && !buggerInfo;
 
   return (
     <button
@@ -138,8 +145,13 @@ export function BranchCard({ branch, isSelected, onClick, buggerInfo }: BranchCa
         </div>
       </div>
 
-      {/* Grade Badge */}
-      {hasGrade && (
+      {/* Grade Badge or Loading Placeholder */}
+      {showGradeLoader ? (
+        <div className="flex items-center gap-1.5 rounded-full bg-gh-border px-2.5 py-1 animate-pulse">
+          <div className="h-3.5 w-3.5 rounded-full bg-gh-text-muted/30" />
+          <div className="h-3 w-5 rounded bg-gh-text-muted/30" />
+        </div>
+      ) : hasGrade ? (
         <div
           className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 ${getGradeBgColor(buggerInfo.grade!)}`}
           title={`Completed with grade ${buggerInfo.grade}`}
@@ -149,7 +161,7 @@ export function BranchCard({ branch, isSelected, onClick, buggerInfo }: BranchCa
             {buggerInfo.grade}
           </span>
         </div>
-      )}
+      ) : null}
 
       {/* Selection indicator */}
       {isSelected && (

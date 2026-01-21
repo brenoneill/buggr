@@ -149,12 +149,25 @@ export function RightPanel({
           onClose={() => setShowScorePanel(false)}
           stressMetadata={stressMetadata}
         />
-      ) : loadingDetails ? (
-        <div className="flex flex-1 items-center justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-gh-border border-t-gh-success" />
-        </div>
-      ) : selectedCommit && commitDetails ? (
-        <div className="flex h-full flex-col gap-6 overflow-y-auto">
+      ) : selectedCommit ? (
+        <div className="relative flex h-full flex-1 flex-col">
+          {/* Check if commit details match the selected commit */}
+          {(() => {
+            const detailsMatchCommit = commitDetails && commitDetails.sha === selectedCommit.sha;
+            const showLoading = loadingDetails || !detailsMatchCommit;
+            
+            return (
+              <>
+                {/* Loading overlay - shows while fetching or when details don't match */}
+                {showLoading && (
+                  <div className="absolute inset-0 z-10 flex items-center justify-center bg-gh-canvas/80 backdrop-blur-sm transition-opacity duration-200">
+                    <div className="h-8 w-8 animate-spin rounded-full border-2 border-gh-border border-t-gh-success" />
+                  </div>
+                )}
+
+                {/* Commit content - only shows when details match selected commit */}
+                {detailsMatchCommit ? (
+                  <div className={`flex h-full flex-col gap-6 overflow-y-auto transition-opacity duration-200 ${showLoading ? "opacity-40" : "opacity-100"}`}>
           {/* Commit Header */}
           <div className="flex items-start gap-4">
             {selectedCommit.author?.avatar_url ? (
@@ -311,10 +324,30 @@ export function RightPanel({
               }}
             />
           )}
-        </div>
-      ) : selectedCommit ? (
-        <div className="flex flex-1 items-center justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-gh-border border-t-gh-success" />
+                  </div>
+                ) : (
+                  /* Skeleton placeholder while waiting for commit details */
+                  <div className="flex h-full flex-col gap-6 animate-pulse">
+                    <div className="flex items-start gap-4">
+                      <div className="h-12 w-12 rounded-full bg-gh-border" />
+                      <div className="flex flex-1 flex-col gap-2">
+                        <div className="h-5 w-32 rounded bg-gh-border" />
+                        <div className="h-4 w-48 rounded bg-gh-border" />
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <div className="h-6 w-20 rounded bg-gh-border" />
+                      <div className="h-4 w-64 rounded bg-gh-border" />
+                    </div>
+                    <div className="flex flex-1 flex-col gap-3">
+                      <div className="h-4 w-32 rounded bg-gh-border" />
+                      <div className="flex-1 rounded-lg border border-gh-border bg-gh-canvas-subtle" />
+                    </div>
+                  </div>
+                )}
+              </>
+            );
+          })()}
         </div>
       ) : (
         <EmptyState icon={EmptyStateIcons.commits} title="No commit selected" description="Select a commit from the list to view changed files" />

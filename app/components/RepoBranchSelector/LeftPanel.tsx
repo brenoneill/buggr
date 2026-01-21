@@ -52,6 +52,7 @@ interface LeftPanelProps {
 
   // Bugger data for branches
   branchBuggerMap: Map<string, BranchBuggerInfo>;
+  loadingBuggers: boolean;
 }
 
 /**
@@ -114,6 +115,7 @@ export function LeftPanel({
   onClearSelection,
   onForkSuccess,
   branchBuggerMap,
+  loadingBuggers,
 }: LeftPanelProps) {
   /**
    * Renders the header section with logo and notes panel.
@@ -216,6 +218,7 @@ export function LeftPanel({
                 isSelected={selectedBranch === branch.name}
                 onClick={() => onBranchSelect(branch.name)}
                 buggerInfo={branchBuggerMap.get(branch.name)}
+                loadingBuggerInfo={loadingBuggers}
               />
             ))}
           </Container>

@@ -104,6 +104,7 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken, userName,
 
     // Buggers
     branchBuggerMap,
+    loadingBuggers,
   } = useRepoBranchSelector({
     initialRepos,
     accessToken,
@@ -150,6 +151,7 @@ export function RepoBranchSelector({ repos: initialRepos, accessToken, userName,
         onClearSelection={handleClearSelection}
         onForkSuccess={handleForkSuccess}
         branchBuggerMap={branchBuggerMap}
+        loadingBuggers={loadingBuggers}
       />
 
       <RightPanel
