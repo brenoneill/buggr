@@ -169,10 +169,17 @@ Open [http://localhost:3000](http://localhost:3000) to get started.
 Once you have a buggered branch to debug:
 
 1. **Clone the buggered branch** to your local machine
-2. **Start the timer** — Make a commit with `start` in the message (e.g., "start debugging")
+2. **Start the timer** — Make an empty commit with `start` in the message:
+   ```bash
+   git commit --allow-empty -m "start"
+   ```
 3. **Find and fix the bugs** — Review the code, identify issues, and make your fixes
-4. **Stop the timer** — Make a commit with `done`, `complete`, `end`, or `stop` in the message
-5. **Check your score** — Return to Buggr and click "Check Score" to see your grade
+4. **Stop the timer** — Commit your fixes with `done` or `end` in the message:
+   ```bash
+   git commit -m "done - fixed all bugs"
+   ```
+5. **Push your changes** — Push to the remote branch
+6. **Check your score** — Return to Buggr, select your branch, and click "Check Score" to see your grade
 
 The scoring system tracks the time between your start and completion commits, then grades you based on the difficulty level:
 
